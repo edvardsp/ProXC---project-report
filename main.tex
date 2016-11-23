@@ -1,0 +1,49 @@
+% !TEX encoding = UTF-8 Unicode
+% !TEX spellcheck = en-US
+
+%%===================================
+
+\documentclass[12pt]{report}
+\usepackage{thesisstyle}
+
+%%===================================
+
+\begin{document}
+
+% titlepage
+\include{front} 
+
+\setcounter{page}{0}
+\pagenumbering{roman}
+
+% pre-content
+\include{preface}
+\include{abstract}
+\tableofcontents
+
+\setcounter{page}{0}
+\pagenumbering{arabic}
+
+% content
+\include{chapters/introduction}
+\include{chapters/background}
+\include{chapters/design}
+\include{chapters/implementation}
+\include{chapters/performance}
+\include{chapters/discussion}
+\include{chapters/conclusion}
+\include{chapters/futurework}
+\include{chapters/availability}
+
+% appendices
+\appendix
+\include{appendices/APIheader}
+\include{appendices/benchmarkcode}
+\include{appendices/examplecode}
+
+% bibliography
+\bibliographystyle{apa}
+\addcontentsline{toc}{chapter}{\bibname}
+\bibliography{refs}  
+
+\end{document}
