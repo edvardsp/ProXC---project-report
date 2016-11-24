@@ -5,22 +5,21 @@
 
 \chapter{Introduction}
 
-\section{Motivation}
-
 In the last decade one of the leading factors in the ever demanding increase in computer processing power is the shift from singlecore to multicore architectures. This entails a whole new set of challenges and problems, but for programming this means a great potential for speedup if the multicores are utilized. The advent of concurrent programming was not necessarily developed with multicore in mind, but if used correctly on multicore can achieve great speedup, and at the same time serving as a great tool to both develop and verify the correctness of concurrent programs. 
 
 The notion of concurrency in programming is not a new thing, and has existed since the 60's. Concurrency regarding computing means multiple computations that are executed in an overlapping fashion, giving the impression that multiple computations are advancing at the same time. Concurrency does not implicitly mean parallelism. Concepts such as semaphores, threads and processes forms its basis from this. 
 
-The introduction of Communicating Sequential Processes (CSP) by \citet{Hoare78} formed a whole new basis within concurrent computing. CSP is on its own a formal language, which describes concurrent systems by defining independent processes, communicating only through message-passing. Not only is CSP a powerful tool to describe concurrent systems, but is also a tool to analyze and check the correctness of concurrent systems. 
+The introduction of Communicating Sequential Processes (CSP) by \citet{hoarashenhurst1978} formed a whole new basis within concurrent computing. CSP is on its own a formal language, which describes concurrent systems by defining independent processes, communicating only through message-passing. Not only is CSP a powerful tool to describe concurrent systems, but is also a tool to analyze and check the correctness of concurrent systems. 
 
 CSP has influenced the design of multiple programming languages, such as Occam, XC and Go. Sadly however, many of these programming languages never received the mainstream popularity it deserved, mostly from being hardware locked  or the lack of use of CSP in the industry. The exception here is Go, which has risen in popularity the last few years. This lack of mainstream CSP programming languages, both in use and availability, has resulted in the development of multiple libraries for more popular languages. This includes JCSP, C++CSP2, CTC++, FIXME. But as this list shows, there does not exist a fully fledged CSP library for C that is both feature rich and mature for real development. 
 
 
 \section{Project Description}
+\label{sec:project_description}
 
 So based on the motivation above, the project description is as follows:
 
-Create a development tool for C, which enables the use of CSP constructs and paradigms in normal C code. To fully utilize the potential of CSP and the inevitable increase in multicore computers, the tool should support multicore. The tool should be aimed towards development on desktop computers, which in turn excludes embedded systems for now. The tool should contain CSP constructs such as:
+Create a development tool for C, which enables the use of CSP constructs and paradigms in normal C code. To fully utilize the potential of CSP and the inevitable increase in multicore computers, the tool should support multicore. The tool should be aimed towards development on desktop computers, which in turn excludes embedded systems. The tool should contain the following CSP constructs:
 
 \begin{enumerate}
     \item Concurrent processes
@@ -28,6 +27,6 @@ Create a development tool for C, which enables the use of CSP constructs and par
     \item ALT FIXME
     \item Conditional guards for ALT FIXME
     \item Ability to express evaluations of sequential and parallel expressions
-    \item 
+    \item Timers
 \end{enumerate}
 
