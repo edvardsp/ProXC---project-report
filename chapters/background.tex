@@ -4,6 +4,7 @@
 %%=========================================
 
 \chapter{Background}
+\label{ch:background}
 
 In this chapter a more in depth explanation of the different topics introduced in the introduction chapter is presented. These topics cover the required background knowledge for the project, which plays a central role in determining on what kind of development tool is to be implemented, how it is to be implemented, as well as showing what already exists of current solutions and tools.
 
@@ -11,36 +12,63 @@ Each topic is presented on its own, and how it relates and affects the choices o
 
 It should be noted that section \ref{sec:csp_formalisms} only includes entries which relates to the choices and development of the end product, even though a great number of entries could fit in that list.
 
-\section{Parallelism vs. Concurrency}
+\section{Concurrency vs. Parallelism}
+\label{sec:concurrencyvsparallelism}
 
-The notion of parallelism and concurrency in programs spawns from the limitations of sequential programs. All programming languages have different ways to express the structure and control flow of a program, but in the end all programs are transformed to machine code which the processor executes \textit{sequentially}. That means for a single processor, only one instruction is executed at a time\footnote{This implies the processor is singlecore}. Concurrency however defines a program into multiple independent sequential programs, which in turn runs each sequential program in interleaving time periods. Even though only one instruction is executed at a time, this gives the impression that multiple sequential programs are advancing at the same time.
+The notion of parallelism and concurrency in programs spawns from the limitations of sequential programs. All programming languages have different ways to express the structure and control flow of a program, but in the end all programs are transformed to machine code which the processor executes \textit{sequentially}. That means for a single processor, only one instruction is executed at a time\footnote{This implies the processor is single-core}. Concurrency however defines a program into multiple independent sequential programs, which in turn runs each sequential program in interleaving time periods. Even though only one instruction is executed at a time, this gives the impression that multiple sequential programs are advancing at the same time.
 
 Parallelism in this sense refers to multiple programs running on multiple processors in parallel. This might look familiar to what concurrency described, but it is important to not confuse these two terms together. Concurrency only serves as an abstraction for parallelism in a program, allowing the programmer to pretend multiple sequential programs are executed in parallel. This abstraction would be valid for both single and multicore, while parallelism describes a condition which only happens on multicore. A more thorough and complete definition of concurrency and parallelism is described in \citet{benari2006}.
 
-Concurrency and parallelism forms the very core of this project. Section \ref{sec:csp} explains what CSP is, and it forms its basis on concurrency. In section \ref{sec:project_description} the project description  CSP enabling development tool, so understanding the underlying concepts of concurrency is important to understand what CSP entails. Further on, multicore support was also mentioned as a motivation for the potential speedup, as a direct opportunity from the parallel nature in concurrent systems. Parallelism is directly tied to multicore, as both terms describe multiple programs executing simultaneously. 
+Concurrency and parallelism forms the very core of this project. Section \ref{sec:csp} explains what CSP is, and it forms its basis on concurrency. In section \ref{sec:project_description} the project description of the CSP enabling development tool, so understanding the underlying concepts of concurrency is important to understand what CSP entails. Further on, multicore support was also mentioned as a motivation for the potential speedup, as a direct opportunity from the parallel nature in concurrent systems. Parallelism is directly tied to multicore, as both terms describe multiple programs executing simultaneously. 
+
 
 \section{Threading Models}
+\label{sec:threadingmodels}
+
+As concurrency is is a superb tool for programmers to abstract parallelism in their program, the implementation details of this is equally as important for this project. There are different ways to implement this, but almost all concurrency models implement some sort of a threading mechanism. When talking about threading mechanisms on Operating Systems (OS), one usually talks about two kinds of threads: user- and kernel-threads. As the names may imply, these threads operate in either user- or kernel-space. Three main models explains the different combinations of the two threads: user-, kernel-, and hybrid-threading models. \citet{brown2007} goes into further details on these models, and short summary is presented below from said article.
+
+In short, the user-threading model implements a cooperative scheduled threading in user-space, and is called a M:1 threading model. This model is running M user-threads on a single kernel-thread, where everything from scheduling and context switching is happening unbeknownst to the kernel-thread. This means this threading mechanism is not visible to the OS, and avoids the overhead related to context switches in kernel-threads. However, blocking calls are a challenge, as a single blocking call will block all user-threads.
+
+Kernel-threading model is often directly supported in OS kernels, and is called a 1:1 threading model. Each kernel-thread is scheduled by the OS onto the the systems processors. Scheduling is often implemented as preemptive, and due to kernel-threads residing in kernel-space gives context switches a much larger overhead than user-threading. Blocking calls are however not a problem. 
+
+Hybrid-threading model combines the two models, and is called a M:N threading model. This model is running multiple kernel-threads, with each kernel-thread running multiple user-threads. Blocking calls is still a problem, but can be mitigated through dispatching a single kernel-thread for the block user-thread, and continue the rest of the scheduling on a new kernel-thread. 
+
 
 \section{Communicating Sequential Programming}
 \label{sec:csp}
 
+
+
+
 \section{CSP Influenced Formalisms}
 \label{sec:csp_formalisms}
 
+
+
+
 \subsection{Programming Languages}
+\label{subsec:csp_prog_lang}
+
 
 \subsubsection*{occam}
 \subsubsection*{XC}
 \subsubsection*{Go}
 
+
 \subsection{Programming Libraries}
+\label{subsec:csp_prog_lib}
+
 
 \subsubsection*{C++CSP2}
 \subsubsection*{JCSP}
 
+
 \subsection{Compilers}
+\label{subsec:csp_compilers}
+
 
 \subsubsection*{SPoC}
 \subsubsection*{KRoC}
+
 
 
