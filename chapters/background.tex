@@ -10,7 +10,6 @@ In this chapter a more in depth explanation of the different topics introduced i
 
 Each topic is presented on its own, and how it relates and affects the choices of the development tool.
 
-It should be noted that section \ref{sec:csp_formalisms} only includes entries which relates to the choices and development of the end product, even though a great number of entries could fit in that list.
 
 \section{Concurrency vs. Parallelism}
 \label{sec:concurrencyvsparallelism}
@@ -37,38 +36,82 @@ Hybrid-threading model combines the two models, and is called a M:N threading mo
 \section{Communicating Sequential Programming}
 \label{sec:csp}
 
+Described and introduced by \citet{hoarashenhurst1978}, Communicating Sequential Programming (CSP) aimed to make concurrency and parallelism a much more convenient tool for programmers. Even though CSP in itself is a mathematical formal language, the concepts and structuring it introduces is very applicable as a programming model. The core concept of CSP is a composition of concurrent sequential processes, which strictly communicate by message passing via channels.
 
+Despite CSP being a great model for describing concurrent systems, it has not gained much mainstream traction within programming communities and industries. As detailed in \citet{benari2006}, concurrent programming introduces new challenges such as race conditions, deadlocks and fairness. These challenges can for many programmers be a hurdle to create correct concurrent programs, shown in \citet{ousterhour1996}. As a result of this they might end up opting in for other simpler programming models, and in turn miss out of CSP. 
 
+This does not mean however that there does not exists CSP implementations. These implementations range from programmings languages which implements the CSP model (section \ref{subsec:csp_prog_lang}), CSP libraries for more mainstream non-CSP programming languages (section \ref{subsec:csp_prog_lib}), and CSP language compilers (section \ref{subsec:csp_comp}).
 
-\section{CSP Influenced Formalisms}
-\label{sec:csp_formalisms}
-
-
+The CSP implementations range in varying popularity and use, and below is a summary of the most notable entries which relates to this project presented.
 
 
 \subsection{Programming Languages}
 \label{subsec:csp_prog_lang}
 
+Multiple programming languages implementing the CSP models in varying degree exists. Probably the most notable and truest implementation of the CSP model is occam. Other languages such as XC and Go is heavily influenced by the CSP model and occam. There exists other CSP languages such as Limbo, Joyce and SuperPascal, however occam, XC and Go seems to be the most influential and used languages to date\footnote{This is a highly subjective view, subjected on the popularity and relevance in the industry}. 
 
-\subsubsection*{occam}
-\subsubsection*{XC}
-\subsubsection*{Go}
+
+\subsubsection{Occam}
+\label{sssec:occam}
+
+Occam is a concurrent programming language which builds upon the CSP model. It was developed by INMOS, \citet{occam83}, and first appeared in 1983. Occam was initially developed as the native programming language for the Transputer, their microprocessor architecture highly specialized for real-time parallel computing, \citet{transputer78}. 
+
+Occam was initially only developed for the Transputer, making it hardware locked and inaccessible for everyone not using the Transputer. However, occam proved to be quite express and useful for concurrent programming, which spurred multiple ports and compilers of occam to other open architectures. 
+
+Sadly, occam never quite took off, and instead got its place in a niche market of real-time parallel computing with its highly specialized microprocessor Transputer. A decade almost went before the first portable occam compiler surfaced as SPoC, \citet{wykesdebbage1994}, which made occam ``available'' for the public. This is only a speculation, but one can argue if INMOS had the wrong ambitions for this language, as their focus was more on the raw processing power on the Transputer rather than the expressive power in their language, \citet{occam83}. 
+
+Whatever the reason was for occam's lack of popularity, occam definitely deserves more love than it has received by the general public. Its incredibly cool concepts and expressive power of concurrent systems should have its place in the mainstream programming industry, and with the onset of Go and its rise in popularity, it seems the mainstream programming industry might be mature enough for CSP.
+
+
+\subsubsection{XC}
+\label{sssec:xc}
+
+
+
+
+\subsubsection{Go}
+\label{sssec:go}
+
+
 
 
 \subsection{Programming Libraries}
 \label{subsec:csp_prog_lib}
 
 
-\subsubsection*{C++CSP2}
-\subsubsection*{JCSP}
+
+
+\subsubsection{C++CSP2}
+\label{sssec:c++csp2}
+
+
+
+
+\subsubsection{JCSP}
+\label{sssec:jcsp}
+
+
 
 
 \subsection{Compilers}
-\label{subsec:csp_compilers}
+\label{subsec:csp_comp}
 
 
-\subsubsection*{SPoC}
-\subsubsection*{KRoC}
 
+
+\subsubsection{SPoC}
+\label{sssec:spoc}
+
+
+
+
+\subsubsection{KRoC}
+\label{sssec:kroc}
+
+
+
+
+\subsubsection{CCSP}
+\label{sssec:ccsp}
 
 
