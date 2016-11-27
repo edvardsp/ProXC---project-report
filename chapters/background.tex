@@ -18,7 +18,7 @@ The notion of parallelism and concurrency in programs spawns from the limitation
 
 Parallelism in this sense refers to multiple programs running on multiple processors in parallel. This might look familiar to what concurrency described, but it is important to not confuse these two terms together. Concurrency only serves as an abstraction for parallelism in a program, allowing the programmer to pretend multiple sequential programs are executed in parallel. This abstraction would be valid for both single and multicore, while parallelism describes a condition which only happens on multicore. A more thorough and complete definition of concurrency and parallelism is described in \citet{benari2006}.
 
-Concurrency and parallelism forms the very core of this project. Section \ref{sec:csp} explains what CSP is, and it forms its basis on concurrency. In section \ref{sec:project_description} the project description of the CSP enabling development tool, so understanding the underlying concepts of concurrency is important to understand what CSP entails. Further on, multicore support was also mentioned as a motivation for the potential speedup, as a direct opportunity from the parallel nature in concurrent systems. Parallelism is directly tied to multicore, as both terms describe multiple programs executing simultaneously. 
+Concurrency and parallelism forms the very core of this project. Section \ref{sec:csp} explains what CSP is, and it forms its basis on concurrency. In Section \ref{sec:project_description} the project description of the CSP enabling development tool, so understanding the underlying concepts of concurrency is important to understand what CSP entails. Further on, multicore support was also mentioned as a motivation for the potential speedup, as a direct opportunity from the parallel nature in concurrent systems. Parallelism is directly tied to multicore, as both terms describe multiple programs executing simultaneously. 
 
 
 \section{Threading Models}
@@ -40,7 +40,7 @@ First introduced by Tony Hoare in 1978 \citep{csp}, Communicating Sequential Pro
 
 Despite CSP being a great model for describing concurrent systems, it has not gained much mainstream traction within programming communities and industries. As detailed in \citet{benari2006}, concurrent programming introduces new challenges such as race conditions, deadlocks and fairness. These challenges can for many programmers be a hurdle to create correct concurrent programs, shown in \citet{ousterhour1996}. As a result of this they might end up opting in for other simpler programming models, and in turn miss out of CSP. 
 
-This does not mean however that there does not exists CSP implementations. These implementations range from programmings languages which implements the CSP model (section \ref{subsec:csp_prog_lang}), CSP libraries for more mainstream non-CSP programming languages (section \ref{subsec:csp_prog_lib}), and CSP language compilers (section \ref{subsec:csp_comp_runtime}).
+This does not mean however that there does not exists CSP implementations. These implementations range from programmings languages which implements the CSP model (Section \ref{subsec:csp_prog_lang}), CSP libraries for more mainstream non-CSP programming languages (Section \ref{subsec:csp_prog_lib}), and CSP language compilers (Section \ref{subsec:csp_comp_runtime}).
 
 The CSP implementations range in varying popularity and use, and below is a summary of the most notable entries which relates to this project presented.
 
@@ -97,34 +97,44 @@ C++CSP2 \citep{c++csp2} is a concurrency library for C++. The original library C
 
 Much of the implementation and design regarding the CSP features and constructs are detailed in \citet{c++csp}, while the details regarding the multi-core support of the concurrency model are in \citet{c++csp2}.
 
-C++CSP2 provide CSP features such as processes, buffered/unbuffered typed one-direct-ional channels, channel Poison for easily shutting down concurrent programs, time functions, alternative construct for expressing choice, barrier synchronization, and smart pointer Mobile to prevent aliasing. These features and more are explained in more detail in the documentation \citep{c++csp2doc}.
+C++CSP2 provide CSP features such as processes, buffered/unbuffered typed one-direct\hyp{}ional channels, channel Poison for easily shutting down concurrent programs, time functions, alternative construct for expressing choice, barrier synchronization, and smart pointer Mobile to prevent aliasing. These features and more are explained in more detail in the documentation \citep{c++csp2doc}.
 
 
 \subsubsection{JCSP}
 \label{sssec:jcsp}
 
-JCSP \citep{jcsp} is a concurrency library for Java. It offers the same features in C++CSP2 \citep{c++csp2}, building upon the CSP model. Compared to C++CSP2, JCSP focuses on more reliable and secure networking, and increases coding safety through promoting CSP specifiers to first-class entries. More information regarding the library and features are found in the documentation \citep{jcspdoc}. 
+JCSP \citep{jcsp} is a concurrency library for Java. It offers the same features in C++CSP2 \citep{c++csp2}, building upon the CSP model. Compared to C++CSP2, JCSP focuses on more reliable and secure networking, and increases coding safety through promoting CSP specifiers to first-class entries. Other than that, they both provide a thorough CSP library. More information regarding the library and its features are found in the documentation \citep{jcspdoc}. 
 
 
 \subsection{Compilers and Run-Time Environments}
 \label{subsec:csp_comp_runtime}
 
-
+As mentioned in Section \ref{subsec:csp_prog_lib}, some CSP libraries have been developed as a consequence on the lack of concurrent programming languages implementing the CSP model. Taking this further, portable compilers and run-time environments have been developed on already existing, unavailable CSP languages, namely occam. Below are the most influential and used compilers and run-time environments summarized. 
 
 
 \subsubsection{SPoC}
 \label{sssec:spoc}
 
+The Southampton's Portable occam Compiler (SPoC) \citep{spoc} is a compiler for occam, making occam programs portable on industry-standard platforms. It achieves this by translating occam source code to ANSI-C, and then using a native C compiler on the generated output. Because of this, SPoC calls itself an occam-to-C translator. 
 
+SPoC was the first major implementation of an occam compiler that was not for the Transputer processor architecture. This opened up the exploitation of the language, and proving occam's usefulness as a concurrent programming language.
 
 
 \subsubsection{KRoC}
 \label{sssec:kroc}
 
+The Kent Retargetable occam Compiler (KRoC) \citep{kroc} is an emulator of the transputer, acting as a architectural mapping, or an emulator, rather than a compiler.
 
+KRoC works by taking the transputer assembly from a compiled occam program and emulating the transputer hardware. This is achieved through emulating the transputer on a register-level, using the native registers of the targeted architecture. The SPARC architecture was the first retargetable architecture supported. 
+
+Initially, the standard toolset occam compiler was used to generate the transputer assembly file, but proved that other occam compilers could be supplied. 
 
 
 \subsubsection{CCSP}
 \label{sssec:ccsp}
 
+CCSP \citep{ccsp} is a portable run-time system that support both occam and C, enabling occam-like programming in C. It also supports KRoC occam system for desktop platforms. CCSP aims to fulfill the shortcomings of KRoC, such as support for C and making debugging useful.
 
+Initially, CCSP only supported uniprocessors, but support for SMP\footnote{Symmetric MultiProcessing} was planned. 
+
+FIXME
