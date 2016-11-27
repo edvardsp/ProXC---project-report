@@ -24,7 +24,7 @@ Concurrency and parallelism forms the very core of this project. Section \ref{se
 \section{Threading Models}
 \label{sec:threadingmodels}
 
-As concurrency is is a superb tool for programmers to abstract parallelism in their program, the implementation details of this is equally as important for this project. There are different ways to implement this, but almost all concurrency models implement some sort of a threading mechanism. When talking about threading mechanisms on Operating Systems (OS), one usually talks about two kinds of threads: user- and kernel-threads. As the names may imply, these threads operate in either user- or kernel-space. Three main models explains the different combinations of the two threads: user-, kernel-, and hybrid-threading models. \citet{brown2007} goes into further details on these models, and short summary is presented below from said article.
+As concurrency is is a superb tool for programmers to abstract parallelism in their program, the implementation details of this is equally as important for this project. There are different ways to implement this, but almost all concurrency models implement some sort of a threading mechanism. When talking about threading mechanisms on Operating Systems (OS), one usually talks about two kinds of threads: user- and kernel-threads. As the names may imply, these threads operate in either user- or kernel-space. Three main models explains the different combinations of the two threads: user-, kernel-, and hybrid-threading models. \citet{c++csp2} goes into further details on these models, and short summary is presented below from said article.
 
 In short, the user-threading model implements a cooperative scheduled threading in user-space, and is called a M:1 threading model. This model is running M user-threads on a single kernel-thread, where everything from scheduling and context switching is happening unbeknownst to the kernel-thread. This means this threading mechanism is not visible to the OS, and avoids the overhead related to context switches in kernel-threads. However, blocking calls are a challenge, as a single blocking call will block all user-threads.
 
@@ -36,7 +36,7 @@ Hybrid-threading model combines the two models, and is called a M:N threading mo
 \section{Communicating Sequential Programming}
 \label{sec:csp}
 
-Described and introduced by \citet{hoarashenhurst1978}, Communicating Sequential Programming (CSP) aimed to make concurrency and parallelism a much more convenient tool for programmers. Even though CSP in itself is a mathematical formal language, the concepts and structuring it introduces is very applicable as a programming model. The core concept of CSP is a composition of concurrent sequential processes, which strictly communicate by message passing via channels.
+First introduced by Tony Hoare in 1978 \citep{csp}, Communicating Sequential Programming (CSP) aimed to make concurrency and parallelism a much more convenient tool for programmers. Even though CSP in itself is a mathematical formal language, the concepts and structuring it introduces is very applicable as a programming model. The core concept of CSP is a composition of concurrent sequential processes, which strictly communicate by message passing via channels.
 
 Despite CSP being a great model for describing concurrent systems, it has not gained much mainstream traction within programming communities and industries. As detailed in \citet{benari2006}, concurrent programming introduces new challenges such as race conditions, deadlocks and fairness. These challenges can for many programmers be a hurdle to create correct concurrent programs, shown in \citet{ousterhour1996}. As a result of this they might end up opting in for other simpler programming models, and in turn miss out of CSP. 
 
@@ -48,17 +48,17 @@ The CSP implementations range in varying popularity and use, and below is a summ
 \subsection{Programming Languages}
 \label{subsec:csp_prog_lang}
 
-Multiple programming languages implementing the CSP models in varying degree exists. Probably the most notable and truest implementation of the CSP model is occam. Other languages such as XC and Go is heavily influenced by the CSP model and occam. There exists other CSP languages such as Limbo, Joyce and SuperPascal, however occam, XC and Go seems to be the most influential and used languages to date\footnote{This is a highly subjective view, subjected on the popularity and relevance in the industry}. 
+Multiple programming languages implementing the CSP models in varying degree exists. Probably the most notable and truest implementation of the CSP model is occam. Other languages such as XC and Go is heavily influenced by the CSP model and occam. There exists other CSP languages such as Limbo \citep{limbo}, Joyce \citep{joyce}, and SuperPascal \citep{superpascal}, however occam, XC and Go seems to be the most influential and used languages to date\footnote{This is a highly subjective view, subjected on the popularity and relevance in the industry}. 
 
 
 \subsubsection{Occam}
 \label{sssec:occam}
 
-Occam is a concurrent programming language which builds upon the CSP model. It was created by INMOS, \citet{occam83}, and first appeared in 1983. Occam was initially developed as the native programming language for the Transputer, their microprocessor architecture highly specialized for real-time parallel computing, \citet{transputer78}. 
+Occam is a concurrent programming language which builds upon the CSP model. It was created by INMOS \citep{occam} and first appeared in 1983. Occam was initially developed as the native programming language for the Transputer, their microprocessor architecture highly specialized for real-time parallel computing \citep{transputer}. 
 
 Occam was initially only developed for the Transputer, making it hardware locked and inaccessible for everyone not using the Transputer. However, occam proved to be quite express and useful for concurrent programming, which spurred multiple ports and compilers of occam to other open architectures. 
 
-Sadly, occam never quite took off, and instead got its place in a niche market of real-time parallel computing with its highly specialized microprocessor Transputer. A decade almost went before the first portable occam compiler surfaced as SPoC, \citet{wykesdebbage1994}, which made occam ``available'' for the public. This is only a speculation, but one can argue if INMOS had the wrong ambitions for this language, as their focus was more on the raw processing power on the Transputer rather than the expressive power in their language, \citet{occam83}. 
+Sadly, occam never quite took off, and instead got its place in a niche market of real-time parallel computing with its highly specialized microprocessor Transputer. A decade almost went before the first portable occam compiler surfaced as SPoC \citep{spoc}, which made occam ``available'' for the public. This is only a speculation, but one can argue if INMOS had the wrong ambitions for this language, as their focus was more on the raw processing power on the Transputer rather than the expressive power in their language \citep{occam}. 
 
 Whatever the reason was for occam's lack of popularity, occam definitely deserves more love than it has received by the general public. Its incredibly cool concepts and expressive power of concurrent systems should have its place in the mainstream programming industry, and with the onset of Go and its rise in popularity, it seems the mainstream programming industry might be mature enough for CSP.
 
@@ -66,7 +66,7 @@ Whatever the reason was for occam's lack of popularity, occam definitely deserve
 \subsubsection{XC}
 \label{sssec:xc}
 
-XC is a concurrent programming language, which builds upon the concurrency and parallelism introduced in occam, and the syntax is based on C with new extensions and some minor restrictions. XC is targeted as the native programming language on the XCore processor architecture, created by XMOS (\citet{xc09}). XC first appeared in 2005.
+XC is a concurrent programming language, which builds upon the concurrency and parallelism introduced in occam, and the syntax is based on C with new extensions and some minor restrictions. XC is targeted as the native programming language on the XCore processor architecture, created by XMOS \citep{xc}. XC first appeared in 2005.
 
 XCore is a multi-core processor for embedded system, aimed at utilizing concurrency and parallelism natively. The only major implementation of XC is for the XCore architecture, making XC a hardware locked language such as occam was initially. 
 
@@ -77,7 +77,7 @@ Since there are no other major implementations of XC for other than XCore, it ha
 \subsubsection{Go}
 \label{sssec:go}
 
-Go is a concurrent programming language, created and developed by Google (\citet{golangintro12}), and first appeared in 2009. Go does not build itself completely on the CSP model, but implements many features and ideas from CSP. This includes channels, parallel composition of asynchronous processes, and event handling on multiple channels with \texttt{select} (\citet{golangspec09}).
+Go is a concurrent programming language, created and developed by Google \citep{golangintro}, and first appeared in 2009. Go does not build itself completely on the CSP model, but implements many features and ideas from CSP. This includes channels, parallel composition of asynchronous processes, and event handling on multiple channels with \texttt{select} \citep{golangspec}.
 
 Go started as a desire of a modern concurrent language, which was both fast and scalable, and supported networking and multiprocessing. Go has since its initial launch in 2009 risen in popularity. As Go was not designed for a specific architecture, compared to occam and XC, has made Go quite popular in the networking industry. As the writing of this paper, Go ranks as the 13th most popular programming language on the TIOBE Index \citep{gopopularity}.
 
@@ -87,13 +87,17 @@ The popularity of Go has proven that the mainstream programming communities and 
 \subsection{Programming Libraries}
 \label{subsec:csp_prog_lib}
 
-With the lack of concurrent programming languages, CSP libraries have been developed for existing sequential, imperative programming languages. 
+With the lack of concurrent programming languages, CSP libraries have been developed for existing sequential, imperative programming languages. This includes libraries such as JCSP \citep{jcsp}, C++CSP2 \citep{c++csp2}, PyCSP \citep{pycsp}, and CSP.NET \citep{cspnet}, however only JCSP and C++CSP2 will be summarized below as of relevance to this project.
 
 
 \subsubsection{C++CSP2}
 \label{sssec:c++csp2}
 
+C++CSP2 \citep{c++csp2} is a concurrency library for C++. The original library C++CSP \citep{c++csp} provided the same features as C++CSP2, used however only user-threads for its concurrency. C++CSP2 aimed to redesign the implementation of the library into a many-to-many threading model, which would be more adequate for utilizing multi-core processors. 
 
+Much of the implementation and design regarding the CSP features and constructs are detailed in \citet{c++csp}, while the details regarding the multi-core support of the concurrency model are in \citet{c++csp2}.
+
+C++CSP2 provide CSP features such as 
 
 
 \subsubsection{JCSP}

@@ -9,9 +9,9 @@ In the last decade one of the leading factors in the ever demanding increase in 
 
 The notion of concurrency in programming is not a new thing, and has existed since the 60's. Concurrency regarding computing means multiple computations that are executed in an overlapping fashion, giving the impression that multiple computations are advancing at the same time. Concurrency does not implicitly mean parallelism. Concepts such as semaphores, threads and processes forms its basis from this. 
 
-The introduction of Communicating Sequential Processes (CSP) by \citet{hoarashenhurst1978} formed a whole new basis within concurrent computing. CSP is on its own a formal language, which describes concurrent systems by defining independent processes, communicating only through message-passing. Not only is CSP a powerful tool to describe concurrent systems, but is also a tool to analyze and check the correctness of concurrent systems. 
+The introduction of Communicating Sequential Processes (CSP) by Tony Hoare \citep{csp} formed a whole new basis within concurrent computing. CSP is on its own a formal language, which describes concurrent systems by defining independent processes, communicating only through message-passing. Not only is CSP a powerful tool to describe concurrent systems, but is also a tool to analyze and check the correctness of concurrent systems. 
 
-CSP has influenced the design of multiple programming languages, such as Occam, XC and Go. Sadly however, many of these programming languages never received the mainstream popularity it deserved, mostly from being hardware locked  or the lack of use of CSP in the industry. The exception here is Go, which has risen in popularity the last few years. This lack of mainstream CSP programming languages, both in use and availability, has resulted in the development of multiple libraries for more popular languages. This includes JCSP, C++CSP2, CTC++, FIXME. But as this list shows, there does not exist a fully fledged CSP library for C that is both feature rich and mature for real development. 
+CSP has influenced the design of multiple programming languages, such as Occam, XC and Go. Sadly however, many of these programming languages never received the mainstream popularity it deserved, mostly from being hardware locked  or the lack of use of CSP in the industry. The exception here is Go, which has risen in popularity the last few years. This lack of mainstream CSP programming languages, both in use and availability, has resulted in the development of multiple libraries for more popular languages and compilers of existing CSP languages. This includes JCSP \citep{jcsp}, C++CSP2 \citep{c++csp2}, SPoC \citep{spoc}, and KRoC \citep{kroc}. But as this list shows, there does not exist a fully fledged CSP library for C that is both feature rich and mature for real development. 
 
 This paper FIXME
 
@@ -26,8 +26,8 @@ Create a development tool for C, which enables the use of CSP constructs and par
 \begin{enumerate}
     \item Concurrent processes
     \item Channels
-    \item ALT FIXME
-    \item Conditional guards for ALT FIXME
+    \item Alternation structure for event handling
+    \item Conditional guards for alternation
     \item Ability to express evaluations of sequential and parallel expressions
     \item Timers
 \end{enumerate}
