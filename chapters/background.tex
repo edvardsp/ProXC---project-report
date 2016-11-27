@@ -40,7 +40,7 @@ Described and introduced by \citet{hoarashenhurst1978}, Communicating Sequential
 
 Despite CSP being a great model for describing concurrent systems, it has not gained much mainstream traction within programming communities and industries. As detailed in \citet{benari2006}, concurrent programming introduces new challenges such as race conditions, deadlocks and fairness. These challenges can for many programmers be a hurdle to create correct concurrent programs, shown in \citet{ousterhour1996}. As a result of this they might end up opting in for other simpler programming models, and in turn miss out of CSP. 
 
-This does not mean however that there does not exists CSP implementations. These implementations range from programmings languages which implements the CSP model (section \ref{subsec:csp_prog_lang}), CSP libraries for more mainstream non-CSP programming languages (section \ref{subsec:csp_prog_lib}), and CSP language compilers (section \ref{subsec:csp_comp}).
+This does not mean however that there does not exists CSP implementations. These implementations range from programmings languages which implements the CSP model (section \ref{subsec:csp_prog_lang}), CSP libraries for more mainstream non-CSP programming languages (section \ref{subsec:csp_prog_lib}), and CSP language compilers (section \ref{subsec:csp_comp_runtime}).
 
 The CSP implementations range in varying popularity and use, and below is a summary of the most notable entries which relates to this project presented.
 
@@ -54,7 +54,7 @@ Multiple programming languages implementing the CSP models in varying degree exi
 \subsubsection{Occam}
 \label{sssec:occam}
 
-Occam is a concurrent programming language which builds upon the CSP model. It was developed by INMOS, \citet{occam83}, and first appeared in 1983. Occam was initially developed as the native programming language for the Transputer, their microprocessor architecture highly specialized for real-time parallel computing, \citet{transputer78}. 
+Occam is a concurrent programming language which builds upon the CSP model. It was created by INMOS, \citet{occam83}, and first appeared in 1983. Occam was initially developed as the native programming language for the Transputer, their microprocessor architecture highly specialized for real-time parallel computing, \citet{transputer78}. 
 
 Occam was initially only developed for the Transputer, making it hardware locked and inaccessible for everyone not using the Transputer. However, occam proved to be quite express and useful for concurrent programming, which spurred multiple ports and compilers of occam to other open architectures. 
 
@@ -66,19 +66,28 @@ Whatever the reason was for occam's lack of popularity, occam definitely deserve
 \subsubsection{XC}
 \label{sssec:xc}
 
+XC is a concurrent programming language, which builds upon the concurrency and parallelism introduced in occam, and the syntax is based on C with new extensions and some minor restrictions. XC is targeted as the native programming language on the XCore processor architecture, created by XMOS (\citet{xc09}). XC first appeared in 2005.
 
+XCore is a multi-core processor for embedded system, aimed at utilizing concurrency and parallelism natively. The only major implementation of XC is for the XCore architecture, making XC a hardware locked language such as occam was initially. 
 
+Some of the interesting features XC introduces are expressive parallelism, communication between tasks through interfaces and channels, event handling on multiple guarded events, hardware support for timers and IO access, safe and unsafe memory access, and more.
+
+Since there are no other major implementations of XC for other than XCore, it has more or less gained a niche market in embedded real-time parallel computing. XC achieves a lot with a great memory safety model, strict rules on communication, and good integration with its hardware, as well as not only focusing on raw performance, but also on determinism of execution time. 
 
 \subsubsection{Go}
 \label{sssec:go}
 
+Go is a concurrent programming language, created and developed by Google (\citet{golangintro12}), and first appeared in 2009. Go does not build itself completely on the CSP model, but implements many features and ideas from CSP. This includes channels, parallel composition of asynchronous processes, and event handling on multiple channels with \texttt{select} (\citet{golangspec09}).
 
+Go started as a desire of a modern concurrent language, which was both fast and scalable, and supported networking and multiprocessing. Go has since its initial launch in 2009 risen in popularity. As Go was not designed for a specific architecture, compared to occam and XC, has made Go quite popular in the networking industry. As the writing of this paper, Go ranks as the 13th most popular programming language on the TIOBE Index \citep{gopopularity}.
+
+The popularity of Go has proven that the mainstream programming communities and industries are mature enough for a proper concurrency programming language. If other languages will finally follow after is only a matter of time.
 
 
 \subsection{Programming Libraries}
 \label{subsec:csp_prog_lib}
 
-
+With the lack of concurrent programming languages, CSP libraries have been developed for existing sequential, imperative programming languages. 
 
 
 \subsubsection{C++CSP2}
@@ -93,8 +102,8 @@ Whatever the reason was for occam's lack of popularity, occam definitely deserve
 
 
 
-\subsection{Compilers}
-\label{subsec:csp_comp}
+\subsection{Compilers and Run-time Environments}
+\label{subsec:csp_comp_runtime}
 
 
 
