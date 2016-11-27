@@ -97,16 +97,16 @@ C++CSP2 \citep{c++csp2} is a concurrency library for C++. The original library C
 
 Much of the implementation and design regarding the CSP features and constructs are detailed in \citet{c++csp}, while the details regarding the multi-core support of the concurrency model are in \citet{c++csp2}.
 
-C++CSP2 provide CSP features such as 
+C++CSP2 provide CSP features such as processes, buffered/unbuffered typed one-direct-ional channels, channel Poison for easily shutting down concurrent programs, time functions, alternative construct for expressing choice, barrier synchronization, and smart pointer Mobile to prevent aliasing. These features and more are explained in more detail in the documentation \citep{c++csp2doc}.
 
 
 \subsubsection{JCSP}
 \label{sssec:jcsp}
 
+JCSP \citep{jcsp} is a concurrency library for Java. It offers the same features in C++CSP2 \citep{c++csp2}, building upon the CSP model. Compared to C++CSP2, JCSP focuses on more reliable and secure networking, and increases coding safety through promoting CSP specifiers to first-class entries. More information regarding the library and features are found in the documentation \citep{jcspdoc}. 
 
 
-
-\subsection{Compilers and Run-time Environments}
+\subsection{Compilers and Run-Time Environments}
 \label{subsec:csp_comp_runtime}
 
 
