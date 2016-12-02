@@ -1,0 +1,63 @@
+% !TEX encoding = UTF-8 Unicode
+%!TEX root = main.tex
+% !TEX spellcheck = en-US
+%%=========================================
+
+\chapter{ProXC - The Library}
+\label{ch:proxc_library}
+
+This chapter will go into further details on what basis ProXC is formed from, the choices regarding library features, and what makes ProXC different compared to existing tools and solutions. Details regarding library design and implementation are explained in Chapter \ref{ch:design} and \ref{ch:implementation}, respectively. 
+
+
+\section{Introduction to ProXC}
+\label{sec:proxc_intro}
+
+ProXC is a CSP\hyp{}inspired concurrency library for C. The library enables C programs to be decomposed into independent sequential processes, and allows the concurrent execution order of said processes to be specified. Communication and synchronization between processes can be strictly lim\-ited to message passing. Message passing is implemented as channels, and are synch\-ronous, pseudo\hyp{}typed, bi\hyp{}directional, and any\hyp{}to\hyp{}any. Alternation between multiple ev\-ents is supp\-orted, and the events can be guarded on a boolean condition. Events include channel reads, timeouts and skip. 
+
+The name ProXC, pronounced ``\textit{prox\hyp{}sea}'', is an abbreviation of ``\textit{Programming XC}''. It is inspired by the CSP language XC (Section \ref{sssec:xc}). As XC is a CSP\hyp{}inspired programming language, as well as a superset of C, ProXC makes a fitting name for a CSP library for C. 
+
+The library aims to achieve, including the project description in Section \ref{sec:project_description}, the following goals:
+\begin{enumerate}
+    \item Acceptable performance
+    \item Intuitive and modular API
+    \item Low memory footprint
+    \item Low run\hyp{}time overhead
+    \item Portable\footnote{This is an issue and is discussed in Section \ref{sec:portability}}
+\end{enumerate}
+
+The idea with ProXC is to be easy to use and incorporate in new and existing C programs. This means the library should not introduce a huge number of keywords, macros and functions to be able to use the library. The amount of interactions with ProXC should be minimal, and the programmer should not know the details of the introduced data types and functions.
+
+ProXC is \textit{not} a hand\hyp{}holding tool for programmers. All existing problems with C, such as NULL pointer dereferencing, memory leaks, pointer aliasing, and much more, is still possible when using ProXC. One can even disregard the CSP model and use global variables instead of message passing. ProXC will not complain. However, ProXC aims to ensure that when a program faults, the origin of the problem should not be the library, but the programmer. 
+
+
+\section{Why a Library?}
+\label{sec:proxc_whylibrary}
+
+The project description in Section \ref{sec:project_description} does not specify what kind of development tool to create. As Section \ref{subsec:csp_prog_lang}, \ref{subsec:csp_prog_lib}, and \ref{subsec:csp_comp_runtime} shows, there are multiple ways to create a CSP development tool for C. For this project, the three options \textit{programming language}, \textit{library} and \textit{run-time system} will be considered.
+
+The first option is to create a new programming language. This gives total freedom when it comes to design, specifications, and implementation. There are several approaches with this, either creating a new language, or creating a superset of an existing language. A superset in this context means basing the syntax and semantics of an existing language, and extending it with new constructs. An example of a new language is occam (Section \ref{sssec:occam}), while an example of a superset is XC (Section \ref{sssec:xc}). The programming language implementation also has to be considered, usually between the choices of an interpreter, a compiler and a translator. The amount of work and thought that has to be put into designing and implementing a programming language is huge. The easiest approach, considering the amount of time available and competence level required, would be creating a superset of C and implementing a translator for the language. The translator could then translate source code to C\hyp{}compliant code.
+
+The second option is to create a library. Many successful CSP libraries has been created for other languages such as C++ and Java (Section \ref{subsec:csp_prog_lib}), which allows reviewing what works and what not. A library has the advantage of being more available, and can be implemented directly in the native programming language, making it more portable. The downside are the limitations in the language itself. One cannot often create new keywords or operators with libraries\footnote{at least not in C, without heavy use of macro magic}, and a CSP library could benefit from this. 
+
+Third option is to create a run\hyp{}time system. This has the advantage being much more flexible than libraries, allowing more direct control of the execution model of the program. Aspects such as task scheduling and resource management are possible to control in run\hyp{}time systems, which are important to consider for a CSP library. Creating a run-time system is more demanding than a library, requiring more knowledge of the execution model of the programming language.
+
+For this project, with limited time available, creating a new programming language would most likely be too ambitious. The challenge of designing and implementing the programming language is not an easy task, and the end result would probably end up as more of an proof of concept rather than a fully fledged product. A new programming language is probably not something that would gain much popularity either. This does however rule out the possibility of custom syntax and operators, which would be very beneficial. Creating a library does sort out the problem of availability, as C is one of the most popular and widespread languages still to date. This does limit the library to the limitations of C, which can be a challenge in code expressiveness and memory safety. A run\hyp{}time system is also necessary for the library, as there needs to be some control of task scheduling in the library. This is the reasoning behind the choice of a library with a run\hyp{}time system for scheduling.
+
+
+\section{Target Platform}
+\label{sec:proxc_target_platform}
+
+
+
+
+\section{Library Features}
+\label{sec:proxc_features}
+
+
+
+
+\section{What Makes ProXC Different?}
+\label{sec:proxc_difference}
+
+
+
