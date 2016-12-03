@@ -6,13 +6,96 @@
 \chapter{Design}
 \label{ch:design}
 
+This chapter explains in detail the design behind the core elements in ProXC. First the foundation of the run\hyp{}time system is explained, and how processes and the scheduler coordinate in this environment. The design of process execution ordering is explained, and how this works in the process and scheduler coordination. Further on, the more abstract constructs channels, timers,  and alternation are detailed. And lastly, the design of the API for the library is described, and what influences has driven the design. 
+
+
+\section{Run\hyp{}time System}
+\label{sec:runtime_system}
+
+The run\hyp{}time system of ProXC forms the foundation for how the library is able to implement a CSP model in C. Some sort of a threading model has to be implemented when implementing a CSP model for programming, which is discussed in Section \ref{sec:concurrency_vs_parallelism}, \ref{sec:threading_models} and \ref{sec:csp}. The choice of threading model is an important choice regarding performance, and is analysed in \citet[chapter 1]{c++csp2}. The paper reasons that the context switch time between threads is the major factor in performance, and argues that the hybrid model would be the best choice for the CSP library. This is reasoned from the added flexibility and benefits of using the combination of user\hyp{}threads and kernel\hyp{}threads, allowing fast user\hyp{}threads for tightly coupled processes, and kernel\hyp{}threads on looser couplings across thread boundaries. Based on this, a hybrid threading model is used for ProXC. 
+
+The core of the run\hyp{}time system is the scheduler, which controls the flow of execution of processes. In the threading model, each kernel\hyp{}thread has a permanent corresponding scheduler, scheduling multiple processes on said kernel\hyp{}thread. Each process is a user\hyp{}thread. The scheduler executes only one process at the time, and schedules other suspended processes by context switching between said processes.
+
+The run\hyp{}time system at start up spawns a number of kernel\hyp{}threads equal to the number of online processor cores minus 1. This comes from that the main thread is running on its own kernel\hyp{}thread, which the run\hyp{}system hijacks. This kernel\hyp{}thread is marked as the main kernel\hyp{}thread. When the scheduler on the main kernel\hyp{}thread is exited, signals the run\hyp{}time system to cleanup and exit. 
+
+
+\subsection{Scheduler}
+
+The scheduler keeps track of the execution state of a kernel\hyp{}thread. Each scheduler knows which process is the main process, as this is important later. As well, it keeps track of the current process running. 
+
+A couple of data structures are used in the scheduler. It has two queues: a ready queue and a total queue. It also has two trees: a sleep tree and a alternating guard sleep tree. The ready queue is a queue of processes that are ready to be executed. The total queue is the total collection of all processes that are present in the scheduler. The sleep tree is a minimal ordered tree of sleeping processes, where the root node of the tree is the process with the smallest time left sleeping. The alternation guard sleep tree is the same as the sleep tree, where it contains alternation guards instead of processes.
+
+The schedulers main loop has three phases: prologue, context switch to next process, and epilogue. Each phases correspond to what it does before, under and after a context switch to a process. 
+
+In prologue the scheduler does a termination test, checks if any processes are available, wakes up any timed out processes, and finds next process to resume. The termination test succeeds if either the total queue is empty, or the exit flag is set. Checking the ready queue ensures there are any processes available, and if not, suspends the kernel\hyp{}thread until either a process becomes ready. A process becomes ready either by timing out in the sleep trees, or is added to the ready queue by an another scheduler. When a process is ready, the scheduler checks the sleep trees and adds any processes that has timed out to the ready queue. Lastly, it finds which process from the ready queue to resume.
+
+After prologue, the scheduler now has a process to resume execution to. First, the process is registered as the running process in the scheduler. This is important for later. Then, the actual context switch to the process happens. From here, the, the flow of execution in the kernel\hyp{}thread jumps from the context of the process. Whenever the process is descheduled, either through an implicit or explicit descheduling point, the flow of execution is returned to the scheduler, and it resumes as if the function call returned. When returned, the scheduler advises the kernel on the memory of the process stack it is not using. This allows the kernel to reduce the actual memory footprint of the run\hyp{}time system.
+
+In epilogue, the state of the returned process is checked and appropriately handled. Currently only the return states of an unaltered process state or an ended process states are handled. The process is added back to the ready queue, or the process is cleaned up, respectively. If the ended process is the main process, the exit flag in the scheduler is set. Lastly, the running process information is reset in the scheduler, and loops back to prologue.
+
+Below is pseudo code of the following phases shown.
+
+\begin{lstlisting}[style=CustomC]
+// Pseudo code for scheduler main loop
+void scheduler() {
+    // Phase 1: Prologue
+    while ( termination_test() ) {
+        wait_for_readyQ_if_empty();
+        check_timedout_processes();
+        current_proc = find_next_process();
+        
+        // Phase 2: Context switch
+        register_running_proc(current_proc);
+        context_switch(current_proc);
+        advise_memory(current_proc.stack);
+        
+        // Phase 3: Epilogue
+        handle_process(current_proc.state, current_proc);
+        reset_running_proc();      
+    }
+    // Here the scheduler exits, and the run-time takes over
+}
+\end{lstlisting}
+
+
+
+
+\subsection{Processes}
+
+
+
+
+\subsection{Execution Ordering of Processes}
+
+
+
+
+\section{Channels}
+
+
+
+
+\section{Timers}
+
+
+
+
+\section{Alternation}
+
+
+
+
+\section{Descheduling Points}
+
+
+
+
+\section{API}
+
+
+
 
 \section{Influences}
-\section{API}
-\section{Kernel Model}
-\section{Runtime environment}
-\section{Channels}
-\section{Timers}
-\section{Alt/select}
-\section{Guards}
+
+
 

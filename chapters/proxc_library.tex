@@ -47,14 +47,24 @@ For this project, with limited time available, creating a new programming langua
 \section{Target Platform}
 \label{sec:proxc_target_platform}
 
-
+ProXC currently only supports 32\hyp{} and 64\hyp{}bit x86 Linux platforms. This is mainly due to the implementation of context switching in user\hyp{}threads, which requires hand\hyp{}written assembly. Porting to other platforms should not be a difficult task, and is discussed more in Section \ref{sec:portability}
 
 
 \section{Library Features}
 \label{sec:proxc_features}
 
-
-
+The complete set of features in ProXC is as follows:
+\begin{itemize}
+    \item User\hyp{}threaded lightweight processes
+    \item Run\hyp{}time system running a scheduler
+    \item Sequential or parallel, nestable execution ordering of processes
+    \item Synchronous or asynchronous execution of execution orderings
+    \item Bi\hyp{}directional, pseudo\hyp{}typed, any\hyp{}to\hyp{}any channels
+    \item Alternation on multiple events, including channel reads, timeouts and skip
+    \item Alternation events guarded by a boolean condition
+    \item Implicit and explicit co\hyp{}operative scheduling, through agreed scheduling points or\\ a \texttt{YIELD} command
+    \item Suspension of processes for a given time, granularity of microseconds
+\end{itemize}
 
 \section{What Makes ProXC Different?}
 \label{sec:proxc_difference}

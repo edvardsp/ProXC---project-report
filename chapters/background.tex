@@ -12,7 +12,7 @@ Each topic is presented on its own, and how it relates and affects the choices o
 
 
 \section{Concurrency vs. Parallelism}
-\label{sec:concurrencyvsparallelism}
+\label{sec:concurrency_vs_parallelism}
 
 The notion of parallelism and concurrency in programs spawns from the limitations of sequential programs. All programming languages have different ways to express the structure and control flow of a program, but in the end all programs are transformed to machine code which the processor executes \textit{sequentially}. That means for a single processor, only one instruction is executed at a time\footnote{This implies the processor is single-core}. Concurrency however defines a program into multiple independent sequential programs, which in turn runs each sequential program in interleaving time periods. Even though only one instruction is executed at a time, this gives the impression that multiple sequential programs are advancing at the same time.
 
@@ -22,7 +22,7 @@ Concurrency and parallelism forms the very core of this project. Section \ref{se
 
 
 \section{Threading Models}
-\label{sec:threadingmodels}
+\label{sec:threading_models}
 
 As concurrency is is a superb tool for programmers to abstract parallelism in their program, the implementation details of this is equally as important for this project. There are different ways to implement this, but almost all concurrency models implement some sort of a threading mechanism. When talking about threading mechanisms on Operating Systems (OS), one usually talks about two kinds of threads: user- and kernel-threads. As the names may imply, these threads operate in either user- or kernel-space. Three main models explains the different combinations of the two threads: user-, kernel-, and hybrid-threading models. \citet{c++csp2} goes into further details on these models, and short summary is presented below from said article.
 

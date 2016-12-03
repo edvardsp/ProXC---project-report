@@ -16,9 +16,49 @@
 \newenvironment{remark}{\par\mbox{}\par\noindent{\bfseries \emph{Remark}\/}:\normalfont}{\par}
 \newenvironment{defin}{\par\mbox{}\par\noindent\bfseries \emph{\Pointinghand\ }\normalfont}{\par}
 \setcounter{tocdepth}{2} 
-\usepackage[colorlinks=false, pdfstartview=FitV,
-linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+\usepackage[colorlinks=false, pdfstartview=FitV]{hyperref}
 \pdfcompresslevel=9
 
 \usepackage{hyphenat}
 \hyphenation{di-rect-ional}
+
+\usepackage[usenames]{xcolor}
+\usepackage{listings}
+%\lstdefinestyle{customc}{
+%    belowcaptionskip=1\baselineskip,
+%    breaklines=true,
+%    frame=L,
+%    xleftmargin=\parindent,
+%    language=C,
+%    showstringspaces=false,
+%    basicstyle=\footnotesize\ttfamily,
+%    keywordstyle=\bfseries\color{green!40!black},
+%    commentstyle=\itshape\color{purple!40!black},
+%    identifierstyle=\color{blue},
+%    stringstyle=\color{orange},
+%}
+\definecolor{listinggray}{gray}{0.9}
+\definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
+\lstdefinestyle{CustomC}{
+    tabsize=4,    
+    language=C,
+    basicstyle=\footnotesize\ttfamily,
+    upquote=true,
+    aboveskip={1.5\baselineskip},
+    columns=fixed,
+    showstringspaces=false,
+    extendedchars=false,
+    breaklines=true,
+    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+    frame=tb,
+    numbers=left,
+    showtabs=false,
+    showspaces=false,
+    showstringspaces=false,
+    identifierstyle=\ttfamily,
+    keywordstyle=\color{blue},
+    commentstyle=\color{yellow!30!black},
+    stringstyle=\color{green!40!black},
+    numberstyle=\color{black},
+    identifierstyle=\color{black},
+}
