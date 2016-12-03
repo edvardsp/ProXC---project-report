@@ -16,14 +16,19 @@ The run\hyp{}time system of ProXC forms the foundation for how the library is ab
 
 The core of the run\hyp{}time system is the scheduler, which controls the flow of execution of processes. In the threading model, each kernel\hyp{}thread has a permanent corresponding scheduler, scheduling multiple processes on said kernel\hyp{}thread. Each process is a user\hyp{}thread. The scheduler executes only one process at the time, and schedules other suspended processes by context switching between said processes.
 
-The run\hyp{}time system at start up spawns a number of kernel\hyp{}threads equal to the number of online processor cores minus 1. This comes from that the main thread is running on its own kernel\hyp{}thread, which the run\hyp{}system hijacks. This kernel\hyp{}thread is marked as the main kernel\hyp{}thread. When the scheduler on the main kernel\hyp{}thread is exited, signals the run\hyp{}time system to cleanup and exit. 
+The run\hyp{}time system at start up spawns a number of kernel\hyp{}threads equal to the number of online processor cores minus 1. This comes from that the main thread is running on its own kernel\hyp{}thread, which the run\hyp{}system hijacks. This kernel\hyp{}thread is marked as the main kernel\hyp{}thread. When the scheduler on the main kernel\hyp{}thread is exited, signals the run\hyp{}time system to cleanup and exit. The run\hyp{}time system initializes the thread\hyp{}specific data key, which is used by the library to find out which scheduler corresponds to which kernel\hyp{}thread. This is explained in more detail in Section \ref{sec:thread_specific_data}.
 
 
 \subsection{Scheduler}
+\label{sec:scheduler}
 
 The scheduler keeps track of the execution state of a kernel\hyp{}thread. Each scheduler knows which process is the main process, as this is important later. As well, it keeps track of the current process running. 
 
+\subsubsection*{Data Structures}
+
 A couple of data structures are used in the scheduler. It has two queues: a ready queue and a total queue. It also has two trees: a sleep tree and a alternating guard sleep tree. The ready queue is a queue of processes that are ready to be executed. The total queue is the total collection of all processes that are present in the scheduler. The sleep tree is a minimal ordered tree of sleeping processes, where the root node of the tree is the process with the smallest time left sleeping. The alternation guard sleep tree is the same as the sleep tree, where it contains alternation guards instead of processes.
+
+\subsubsection*{Execution Phases}
 
 The schedulers main loop has three phases: prologue, context switch to next process, and epilogue. Each phases correspond to what it does before, under and after a context switch to a process. 
 
@@ -34,7 +39,6 @@ After prologue, the scheduler now has a process to resume execution to. First, t
 In epilogue, the state of the returned process is checked and appropriately handled. Currently only the return states of an unaltered process state or an ended process states are handled. The process is added back to the ready queue, or the process is cleaned up, respectively. If the ended process is the main process, the exit flag in the scheduler is set. Lastly, the running process information is reset in the scheduler, and loops back to prologue.
 
 Below is pseudo code of the following phases shown.
-
 \begin{lstlisting}[style=CustomC]
 // Pseudo code for scheduler main loop
 void scheduler() {
@@ -50,14 +54,14 @@ void scheduler() {
         advise_memory(current_proc.stack);
         
         // Phase 3: Epilogue
-        handle_process(current_proc.state, current_proc);
+        check_state(current_proc);
         reset_running_proc();      
     }
     // Here the scheduler exits, and the run-time takes over
 }
 \end{lstlisting}
 
-
+It is important to note that when entering phase 3, the state of the returned process is chan\-ged in the context of the process. So even though the scheduler sets the state of the process to running in phase 1, the process state can and will be changed when execution is returned to the scheduler. This is of course done by the library, and is invisible to the programmer.
 
 
 \subsection{Processes}
@@ -81,6 +85,12 @@ void scheduler() {
 
 
 \section{Alternation}
+
+
+
+
+\section{Thread Specific Data}
+\label{sec:thread_specific_data}
 
 
 
