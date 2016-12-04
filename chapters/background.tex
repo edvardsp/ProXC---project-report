@@ -33,6 +33,18 @@ Kernel-threading model is often directly supported in OS kernels, and is called 
 Hybrid-threading model combines the two models, and is called a M:N threading model. This model is running multiple kernel-threads, with each kernel-thread running multiple user-threads. Blocking calls is still a problem, but can be mitigated through dispatching a single kernel-thread for the block user-thread, and continue the rest of the scheduling on a new kernel-thread. 
 
 
+\section{Memory Layout of C}
+\label{sec:memory_layout_c}
+
+
+
+
+\section{Stackful Coroutines}
+\label{sec:stackful_coroutines}
+
+
+
+
 \section{Communicating Sequential Programming}
 \label{sec:csp}
 

@@ -17,13 +17,14 @@ ProXC is a CSP\hyp{}inspired concurrency library for C. The library enables C pr
 The name ProXC, pronounced ``\textit{prox\hyp{}sea}'', is an abbreviation of ``\textit{Programming XC}''. It is inspired by the CSP language XC (Section \ref{sssec:xc}). As XC is a CSP\hyp{}inspired programming language, as well as a superset of C, ProXC makes a fitting name for a CSP library for C. 
 
 The library aims to achieve, including the project description in Section \ref{sec:project_description}, the following goals:
-\begin{enumerate}
+\begin{itemize}
+    \setlength\itemsep{0em}
     \item Acceptable performance
     \item Intuitive and modular API
     \item Low memory footprint
     \item Low run\hyp{}time overhead
     \item Portable\footnote{This is an issue and is discussed in Section \ref{sec:portability}}
-\end{enumerate}
+\end{itemize}
 
 The idea with ProXC is to be easy to use and incorporate in new and existing C programs. This means the library should not introduce a huge number of keywords, macros and functions to be able to use the library. The amount of interactions with ProXC should be minimal, and the programmer should not know the details of the introduced data types and functions.
 
@@ -55,6 +56,7 @@ ProXC currently only supports 32\hyp{} and 64\hyp{}bit x86 Linux platforms. This
 
 The complete set of features in ProXC is as follows:
 \begin{itemize}
+    \setlength\itemsep{0em}
     \item User\hyp{}threaded lightweight processes
     \item Run\hyp{}time system running a scheduler
     \item Sequential or parallel, nestable execution ordering of processes
