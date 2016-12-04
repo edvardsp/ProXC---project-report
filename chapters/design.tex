@@ -182,39 +182,131 @@ A composite process with a single process does not need a branch node, however a
 
 When a process defines a composite process, the run\hyp{}time system parses the FIXME definitions and creates a temporary composite process tree. The running process is marked as the root process of the composite process tree. The composite process tree is then traversed by the run\hyp{}time system, with the following algorithm:
 
-\begin{enumerate}[topsep=0em,itemsep=-1em,partopsep=1em,parsep=1em]
-\label{algo:composite_process_tree_traversal}
-    \item Given a node, initialized with child node of root node.
-    \item \label{loopstart} If the node is a \texttt{PROC} block
-    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
-        \item Create the process and add it to the ready queue of a scheduler.
-        \item Stop traversing.
-    \end{enumerate}
-    \item If the node is a \texttt{SEQ} block with positive non\hyp{}zero N childs
-    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
-        \item Register number of childs left on this node to N.
-        \item Traverse to the leftmost child node.
-        \item Goto \ref{loopstart}.
-    \end{enumerate}
-    \item If the node is a \texttt{PAR} block with positive non\hyp{}zero N childs
-    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
-        \item Register number of childs left on this node to N.
-        \item Traverse to all child nodes.
-        \item For all child nodes, goto \ref{loopstart}.
-    \end{enumerate}
-    \item Return error.
-\end{enumerate}
+%\begin{enumerate}[topsep=0em,itemsep=-1em,partopsep=1em,parsep=1em]
+%\label{algo:composite_process_tree_traversal}
+%    \item \label{traversal_start} Given a node, initialized with child node of root node.
+%    \item If the node is a \texttt{PROC} block
+%    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%        \item Create the process and add it to the ready queue of a scheduler.
+%        \item Stop traversing.
+%    \end{enumerate}
+%    \item If the node is a \texttt{SEQ} block with positive non\hyp{}zero N childs
+%    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%        \item Register number of childs left on this node to N.
+%        \item Traverse to the leftmost child node.
+%        \item Goto \ref{traversal_start}.
+%    \end{enumerate}
+%    \item If the node is a \texttt{PAR} block with positive non\hyp{}zero N childs
+%    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%        \item Register number of childs left on this node to N.
+%        \item Traverse to all child nodes.
+%        \item For all child nodes, goto \ref{traversal_start}.
+%    \end{enumerate}
+%    \item Return Error.
+%\end{enumerate}
+
+\begin{lstlisting}[style=CustomC,caption={Pseudo code for the composite process tree traversal algorithm},label={lst:algo_composite_process_tree_traversal}]
+// Called with the child node of the root node
+int traversal(Node node) {
+	switch (node.type) {
+	case PROC:
+		process = create_process(node.fxn_and_args);
+		reschedule(process);
+		return Ok;
+	case SEQ: // fallthrough
+	case PAR:
+	    if (node.num_childs < 1) return Error;
+	    if (node.num_childs == 1) {
+	        node.parent.this_node = node.child;
+	        return traversal(node.child);
+	    }
+		node.N = node.num_childs;
+		if (node.type == SEQ) {
+			return traversal(node.leftmost_child);
+		} else {
+		    for_each(child in node.childs) {
+		    	if (traversal(child) != Ok) return Error;
+		    }
+		    return Ok;
+		}
+	}
+	return Error;
+}
+\end{lstlisting}
 
 After the composite process tree is traversed, all initial processes are created and added to the ready queue in the scheduler. One thing to remark about the algorithm is that process creation is lazily evaluated \citep{lazyevaluation}, which means the processes are created when needed. This is entirely the consequence of the \texttt{SEQ} block behaviour. 
 Now, whether the execution type is specified to be asynchronous or synchronous, the root process continues execution or transitions process state from \textit{Ready} to \textit{Wait}, respectively. For the synchronous case, the root node transitions from \textit{Wait} to \textit{Ready} when all \texttt{PROC} in the composite process tree has finished. 
 
 However, one also has consider the how the execution order of the composite process tree behaves when a \texttt{PROC} ends. The following algorithm specifies how this is handled by the run\hyp{}time system:
 
-\begin{enumerate}[topsep=0em,itemsep=-1em,partopsep=1em,parsep=1em]
-\label{algo:composite_process_proc_end}
-    \item Given a node, initialized with the ended \texttt{PROC}.
-    \item 
-\end{enumerate}
+%\begin{enumerate}[topsep=0em,itemsep=-1em,partopsep=1em,parsep=1em]
+%\label{algo:composite_process_proc_end}
+%    \item \label{procend_start} Given a node, initialized with the ended \texttt{PROC}.
+%    \item If the node is a \texttt{GO} block
+%    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%        \item Return Ok.
+%    \end{enumerate}
+%    \item If the node is a \texttt{RUN} block
+%    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%        \item Reschedule the root process.
+%        \item Return Ok.
+%    \end{enumerate}
+%    \item If the node is a \texttt{PROC} block
+%    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%        \item Traverse to the parent node.
+%        \item Goto \ref{procend_start}.
+%    \end{enumerate}
+%    \item If the node is a \texttt{SEQ} block with registered positive non\hyp{}zero M childs left
+%    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%        \item Decrement M.
+%        \item If M is zero
+%        \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%            \item Traverse to the parent node.
+%            \item Goto \ref{procend_start}.
+%        \end{enumerate}
+%        \item Apply the traversal algorithm to the child node right to the returning child node.
+%        \item Return the return value of the traversal algorithm.
+%    \end{enumerate}
+%    \item If the node is a \texttt{PAR} block with registered positive non\hyp{}zero M childs left
+%    \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%        \item Decrement M.
+%        \item If M is zero
+%        \begin{enumerate}[topsep=-1em,itemsep=-1em,partopsep=-1em,parsep=1em]
+%            \item Traverse to the parent node.
+%            \item Goto \ref{procend_start}.
+%        \end{enumerate}
+%        \item Return Ok.
+%    \end{enumerate}
+%    \item Return Error.
+%\end{enumerate}
+
+\begin{lstlisting}[style=CustomC,caption={Pseudo code for the composite process tree \texttt{PROC} ended algorithm},label={lst:algo_composite_process_tree_proc_ended}]
+// Called with the ended PROC
+int proc_end(Node node) {
+	while (true) {
+		switch (node.type) {
+		case GO:
+			return Ok;
+		case RUN:
+			reschedule(node.root_process);
+			return Ok;
+		case PROC:
+			node = node.parent;
+			continue;
+		case SEQ: // fallthrough
+		case PAR:
+			if (--node.M == 0) {
+				node = node.parent;
+				continue;
+			}
+			return (node.type == SEQ)
+				? traversal(node.next_in_sequence)
+				: Ok;
+		}
+		return Error;
+	}
+}
+\end{lstlisting}
 
 
 \section{Channels}
