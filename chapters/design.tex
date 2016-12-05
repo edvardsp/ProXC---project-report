@@ -313,29 +313,29 @@ The rescheduling of the root process in a synchronous composite process is descr
 
 \section{Channels}
 
+Channels forms the means of interprocess communication and synchronization, following the message passing model. There are mainly three aspects of channel design that must be considered, namely synchronous or asynchronous communication, channel disjointness, and type\hyp{}safe data transfer. 
+
 \subsection{Synchronous and Unbuffered, or Asynchronous and Buffered}
 
-Channels forms the means of interprocess communication and synchronization, following the message passing model. There are many different designs of channels, being either buffered or not, or synchronous or asynchronous. 
-
-Coming from the CSP model, channels are implemented as unbuffered and synchronous\footnote{Synchronous channels are inherently unbuffered, but explicitness has never hurt anyone}, and are sometimes called a synchronous rendezvous. This is used as a one\hyp{}way transfer of data between a receiver and a sender. Both the receiver and sender must be available at the channel for the transfer to occur. If one of the ends are not present, the other end must wait until both ends are ``ready''.
+Coming from the CSP model, channels are implemented as unbuffered and synchronous, and are sometimes called a synchronous rendezvous. This is used as a one\hyp{}way transfer of data between a receiver and a sender. Both the receiver and sender must be available at the channel for the transfer to occur. If one of the ends are not present, the other end must wait until both ends are ``ready''.
 
 This channel design follows the CSP model, being unbuffered and synchronous.
 
 \subsection{Channel Disjointness}
 
-Some designs have a notion of disjointness \citep[see][chapter 3.3.1]{xc}, setting restrictions on how many processes are allowed to use a channel, and how many unique senders or receivers a channel can have. These designs are often denoted as a one\hyp{}to\hyp{}one, any\hyp{}to\hyp{}one, one\hyp{}to\hyp{}any, or any\hyp{}to\hyp{}any channels, following the \textit{\#Senders}\hyp{}to\hyp{}\textit{\#Receivers} scheme.
+Some channels have a notion of disjointness \citep[see][chapter 3.3.1]{xc}, setting restrictions on how many processes are allowed to use a channel, and how many unique senders or receivers a channel can have. These designs are often denoted as a one\hyp{}to\hyp{}one, any\hyp{}to\hyp{}one, one\hyp{}to\hyp{}any, or any\hyp{}to\hyp{}any channels, following the \textit{\#Senders}\hyp{}to\hyp{}\textit{\#Receivers} scheme.
 
 Creating four version of the channel design, one for each of the four combinations of \textit{one} and \textit{any}, might turn out to be a flexible approach. This allows the programmer to handpick the channel type for certain use cases, i.e.  one\hyp{}to\hyp{}any for multiple readers and one writer, etc.. 
 
 One might argue ``Why not just have a any\hyp{}to\hyp{}any design, and cover all use cases?''. Enforcing disjointness increases the expressiveness of the abstraction, allowing the programmer to create more correct programs that reflects a truer behaviour of the system. As well, this also gives the implementation some assumptions allowing better optimizations for each design. 
 
-This does however have to be taken in consideration during implementation. If disjointness proves to be too difficult and/or 
+This however has to be taken in consideration during implementation. If disjointness proves to be too difficult and/or impractical to implement, an any\hyp{}to\hyp{}any channel will suffice. 
 
-\subsection{Type Safety}
+\subsection{Type\hyp{}Safety}
 
-Channels are also used to transfer data between processes. Type errors can be an issue in a data transfer, where the type of data that was sent over the channel does not match the type of data that was expected to be received. 
+Channels are also used to transfer data between processes. Type errors can be an issue in a data transfer, where the type of data sent over a channel does not match the type of data expected to be received. 
 
-An example can be a sender and a receiver on a channel. Sender sends a message of type A, which has a 4 byte size representation. Receiver B expects to receive a message of type B, which has a 2 byte size representation, and allocates the appropriate memory. When the transfer of data occurs, the channel writes the 4 bytes of data to the memory allocated only for 2 bytes. 2 bytes are written past the allocated memory, and memory corruption has occurred. See illustration in Figure \ref{fig:type_error} for reference. This illustrates the dangers of not enforcing type\hyp{}safety on channels. 
+An example can be a sender and a receiver on a channel with no type\hyp{}safety. Sender sends a message of type A, which has a 4 byte size representation. Receiver B expects to receive a message of type B, which has a 2 byte size representation, and allocates the appropriate memory. When the transfer of data occurs, the channel writes the 4 bytes of data to the memory allocated only for 2 bytes. 2 bytes are written past the allocated memory, and memory corruption has occurred. See illustration in Figure \ref{fig:type_error} for reference. This illustrates the dangers of not enforcing type\hyp{}safety on channels. 
 
 \FloatBarrier
 
@@ -348,9 +348,13 @@ An example can be a sender and a receiver on a channel. Sender sends a message o
 
 \FloatBarrier
 
-Type\hyp{}safe channels enforce that an instance of a channel only transfers messages of only one type. This in turn enforces the sender and receiver to agree on the type of the message. This should be favorable, as type errors should be treated as bugs in a program. Channels should therefore be as type\hyp{}safe as possible.
+Type\hyp{}safe channels enforces only transfer of messages of only one type. This in turn enforces the sender and receiver to agree on the type of the message. This should be favorable, as type errors should be treated as bugs in a program. Channels should therefore be as type\hyp{}safe as possible.
 
-C is however known for not being very type\hyp{}safe. The language enforces type\hyp{}safety to some degree, but is easily circumventable through type casting to pointer types. A common source of type errors in C programs are pointers casted from and to void pointers, \texttt{void*}. Void pointers are used for memory with an unspecified types, which are convenient for implementation of generic interfaces. This is how most likely the 
+C is however known for not being very type\hyp{}safe. The language enforces type\hyp{}safety to some degree, but is easily circumventable through type casting to pointer types. A common source of type errors in C programs are pointers casted from and to void pointers, \texttt{void*}. Void pointers are used for memory with an unspecified type, which are convenient for implementation of generic interfaces. This is most likely how channels will implement data transfer, being compatible with any type. Knowing this, complete type\hyp{}safe channels in C will be impossible without code bloat and breaking encapsulation\footnote{This is possible, but requires heavy use of macros and leaking implementation details to the programmer}. A compromise is size\hyp{}safe channels. Instead of ensuring the type matches, the size representation of the type must match on both sides. This should not require much overhead, and at least avoids memory corruption, illustrated in Figure \ref{fig:type_error}.
+
+\subsection{Complete Design}
+
+Summary of complete design, the channel is synchronous and unbuffered. Should support the four disjoint restriction schemes one\hyp{}to\hyp{}one, any\hyp{}to\hyp{}one, one\hyp{}to\hyp{}any, or any\hyp{}to\hyp{}any to the degree of what is possible, and enforces size\hyp{}safety on the data transfer.
 
 
 \section{Alternation}
