@@ -102,8 +102,7 @@ The process state describes the current state of the process. In the run\hyp{}ti
 \FloatBarrier
 
 The process states describes the following: 
-\begin{itemize}
-    \setlength\itemsep{0em}
+\begin{itemize}[topsep=0em,itemsep=-1em,partopsep=-1em,parsep=1em]
     \item \textbf{Ready state}: the process is in a scheduler's ready queue and is ready to be resumed. 
     \item \textbf{Running state}: the process is currently being executed on a kernel\hyp{}thread, and the\\ scheduler is waiting for the process to return control.
     \item \textbf{Ended state}: the process has reached the end of its sequential code, and can safely\\ be cleaned up.
@@ -135,8 +134,7 @@ Processes are responsible for defining and spawning new processes, which is done
 \subsection{Composite Process Representation}
 
 A composite process can be described as a node tree. At the root node of the tree is an execution block, \texttt{GO} or \texttt{RUN}. Every leaf node of the tree is a \texttt{PROC} block. Branch nodes consists of execution order blocks, \texttt{SEQ} or \texttt{PAR}, and are nestable. The behaviour of each block is specified as follows:
-\begin{itemize}
-    \setlength\itemsep{0em}
+\begin{itemize}[topsep=0em,itemsep=-1em,partopsep=-1em,parsep=1em]
     \item \texttt{PROC}: defines a \textit{new process}. Takes a function and zero\hyp{}or\hyp{}more function arguments, and returns a leaf node. 
     
     \item \texttt{SEQ}: defines an \textit{execution order}. Takes one\hyp{}or\hyp{}more leaf or branch nodes, and returns a branch node. The execution order of these child nodes are specified to be executed \textit{sequentially}, from left to right. 
@@ -311,7 +309,9 @@ The algorithm starts at the ended \texttt{PROC} and backtracks down the tree unt
 
 The rescheduling of the root process in a synchronous composite process is described on line \ref{line:root_process_start} in Listing \ref{lst:algo_composite_process_tree_proc_ended}.
 
+
 \section{Channels}
+\label{sec:channels}
 
 Channels forms the means of interprocess communication and synchronization, following the message passing model. There are mainly three aspects of channel design that must be considered, namely synchronous or asynchronous communication, channel disjointness, and type\hyp{}safe data transfer. 
 
@@ -358,6 +358,42 @@ Summary of complete design, the channel is synchronous and unbuffered. Should su
 
 
 \section{Alternation}
+\label{sec:alternation}
+
+Alternation is used to wait on multiple guarded events, selecting only one available event to execute. Each guarded event can be supplemented with a corresponding code execution. Optionally, events are guarded by a boolean condition, which are evaluated at the initialization of the alternation process. Only guards for which the condition is true is enabled for selection. Events consists of the following: channel reads, timeouts and skip. The alternation process is a synchronous process, meaning the alternating process is waiting until an event is selected. 
+
+Alternation is used together with the switch construct in C. Alternation takes in a set of ordered, guarded events, and returns the number, hereafter called key, corresponding to the guarded event that was selected. Keys are incrementally ordered, starting at zero on the first guard. When a guarded event is selected and a key is returned, the corresponding switch case will execute. Listing \ref{lst:alternation_setup} displays pseudocode of the alternation setup, with three guards of the three possible events. 
+
+\begin{lstlisting}[style=CustomC,caption={Pseudocode of alternation setup},label={lst:alternation_setup}]
+switch (Alternation(
+	Guard(condition,  // Guard 0, enabled when `condition` is true
+		ChanRead(chan, data, sizeof(data)),
+	Guard(true,       // Guard 1, always enabled
+		Timeout(time)),
+	Guard(false,      // Guard 2, never enabled
+		Skip())
+)) {
+case 0: // Code for Guard 0
+case 1: // Code for Guard 1
+case 2: // Code for Guard 2
+}
+\end{lstlisting}
+
+\subsection{Guarded Events}
+
+The three events operates as follows:
+
+\begin{itemize}[topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item Channel Read: specifies a channel read on a given channel, and stores the message in a given variable. The event is available when a sender is on the channel. 
+    
+    \item Timeout: specifies a timeout for the selection process. If the alternation process has not selected an event within the specified time, the timeout guard is selected and the alternating process is resumed. 
+    
+    \item Skip: is always available. In other words, if no other events are available at the alternation initialization, the skip event is automatically selected. 
+\end{itemize}
+
+It might be tempting to suggest that the skip guards makes the alternation process asynchronous, but this is not the case. Whenever the alternation selects the skip event as a result of no other available events, it simply synchronizes on the Skip event. 
+
+\subsection{Event Selection and Fairness}
 
 
 
