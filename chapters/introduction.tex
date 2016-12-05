@@ -16,22 +16,3 @@ CSP has influenced the design of multiple programming languages, such as Occam, 
 
 This report details the choice of library, details and implementation for ProXC. Chapter \ref{ch:introduction} briefly explains the current lack of CSP influenced concurrent programming languages and tools, its potential in multicore architectures, and goes on defining the project description. Chapter \ref{ch:background} goes more in depth in related concepts and existing work in CSP modelled concurrency programming. Chapter \ref{ch:proxc_library} explains the choices related to the library, such as why a library and library features. Chapter \ref{ch:design} goes into detail the design of the library features, and Chapter \ref{ch:implementation} explains the implementation of said features. Chapter \ref{ch:examples_usage} presents examples of code, showcasing the different library features in use. Chapter \ref{ch:performance} discusses what the current status of development, what is missing, and flaws with the library. Chapter \ref{ch:conclusion} concludes the report. Chapter \ref{ch:future_work} discusses what is possible for future work on the project. And finally, Chapter \ref{ch:availability} links to the source code of the project.
 
-
-\section{Project Description}
-\label{sec:project_description}
-
-FIXME
-
-So based on the motivation above, the project description is as follows:
-
-Create a development tool for C, which enables the use of CSP constructs and paradigms in normal C code. To fully utilize the potential of CSP and the inevitable increase in multicore computers, the tool should support multicore. The tool should be aimed towards development on desktop computers, which in turn excludes embedded systems. The tool should contain the following CSP constructs:
-
-\begin{enumerate}
-    \item Concurrent processes
-    \item Channels
-    \item Alternation structure for event handling
-    \item Conditional guards for alternation
-    \item Ability to express evaluations of sequential and parallel expressions
-    \item Timers
-\end{enumerate}
-

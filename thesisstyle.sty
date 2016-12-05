@@ -15,6 +15,13 @@
 \usepackage{setspace}
 \linespread{1.5}
 
+\usepackage{afterpage}
+\newcommand\blankpage{%
+    \null
+    \thispagestyle{empty}%
+    \addtocounter{page}{-1}%
+    \newpage}
+
 \newenvironment{remark}{\par\mbox{}\par\noindent{\bfseries \emph{Remark}\/}:\normalfont}{\par}
 \newenvironment{defin}{\par\mbox{}\par\noindent\bfseries \emph{\Pointinghand\ }\normalfont}{\par}
 \setcounter{tocdepth}{2} 
@@ -38,6 +45,7 @@
     columns=fixed,
     showstringspaces=false,
     extendedchars=false,
+    escapechar=@,
     breaklines=true,
     prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
     frame=tb,
