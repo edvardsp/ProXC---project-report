@@ -205,7 +205,7 @@ When a process defines a composite process, the run\hyp{}time system parses the 
 
 \begin{lstlisting}[style=CustomC,caption={Pseudo code for the composite process tree traversal algorithm},label={lst:algo_composite_process_tree_traversal}]
 // Called with the child node of the root node
-int traversal(Node node) {
+int traversal(node) {
 	switch (node.type) {
 	case PROC:
 		process = create_process(node.fxn_and_args);
@@ -280,7 +280,7 @@ However, one also has consider the how the execution order of the composite proc
 
 \begin{lstlisting}[style=CustomC,caption={Pseudo code for the composite process tree \texttt{PROC} ended algorithm},label={lst:algo_composite_process_tree_proc_ended}]
 // Called with the ended PROC
-int proc_end(Node node) {
+int proc_end(node) {
 	while (true) {
 		switch (node.type) {
 		case RUN:                           
@@ -360,9 +360,11 @@ Summary of complete design, the channel is synchronous and unbuffered. Should su
 \section{Alternation}
 \label{sec:alternation}
 
-Alternation is used to wait on multiple guarded events, selecting only one available event to execute. Each guarded event can be supplemented with a corresponding code execution. Optionally, events are guarded by a boolean condition, which are evaluated at the initialization of the alternation process. Only guards for which the condition is true is enabled for selection. Events consists of the following: channel reads, timeouts and skip. The alternation process is a synchronous process, meaning the alternating process is waiting until an event is selected. 
+Alternation is used to wait on multiple guarded events, selecting only one available event to execute. Each guarded event can be supplemented with a corresponding code execution. Optionally, events are guarded by a boolean condition, which are evaluated at the initialization of the alternation process. Only guards for which the condition is true is enabled for selection. Events consists of the following: channel reads, timeouts and skip. The alternation process is a synchronous process, meaning the alternating process is waiting until an event is available and selected. 
 
-Alternation is used together with the switch construct in C. Alternation takes in a set of ordered, guarded events, and returns the number, hereafter called key, corresponding to the guarded event that was selected. Keys are incrementally ordered, starting at zero on the first guard. When a guarded event is selected and a key is returned, the corresponding switch case will execute. Listing \ref{lst:alternation_setup} displays pseudocode of the alternation setup, with three guards of the three possible events. 
+Alternation is used together with the switch construct in C. Alternation takes in a set of ordered, guarded events, and returns the number, hereafter called key, corresponding to the guarded event that was selected. Keys are incrementally ordered, starting at zero on the first guard. When a guarded event is selected and a key is returned, the event is already executed and branches to the corresponding switch case. 
+
+Listing \ref{lst:alternation_setup} displays pseudocode of the alternation setup, with three guards of the three possible events. Note that the code section for each guard is optional, and can be completely left out.
 
 \begin{lstlisting}[style=CustomC,caption={Pseudocode of alternation setup},label={lst:alternation_setup}]
 switch (Alternation(
@@ -379,9 +381,50 @@ case 2: // Code for Guard 2
 }
 \end{lstlisting}
 
+\subsection{Alternation Process Stages}
+
+The alternation process consists of three stages: activation, selection, and deactivation. It has one set of available events, initialized to empty. Key is initialized to 0.
+
+The first stage, activation, checks if the guards are enabled and the corresponding events are available. First, iterating over every guard and checking the guard condition. If the condition is true, the event is activated. The guard is also given a corresponding key. If condition is false, the event is ignored. The key is incremented for each check regardless if activated or not. This is to match each guards with the case numbers. When an event is activated, it is checked if available. If available, it is registered in the set of available events.
+
+The second stage, selection, selects which event to synchronize on from the set of available events. After the first stage, one of two cases apply: either some events were already available during activation, or non were. In other words, the set of available events is either non\hyp{}empty or empty. If non\hyp{}empty, an event is selected and moves on to the third stage. If empty, the alternation process is suspended and waits for an event to be available. When the alternation process is resumed, the set of available events is now populated by one or more events. An event is selected and moves on to the third stage. More details about selection in Section \ref{subsec:alternation_fairness}.
+
+In the third stage, deactivation, every guard is iterated over and deactivated if condition is true.
+
+In Listing \ref{lst:alternation_process} is pseudocode of the following process stages shown.
+
+\begin{lstlisting}[style=CustomC,caption={Pseudocode of alternation process},label={lst:alternation_process}]
+int Alternation(guards) {
+	available = {}
+	key = 0
+	// Activation
+	for_each(guard in guards) {
+		if (guard.condition) {
+			activate(guard.event)
+			guard.event.key = key
+			if (guard.event.available) 
+				available.add(guard.event)
+		}
+		key++
+	}
+	// Selection
+	if (available.empty)
+		suspend()
+	key_select = select(available)
+	// Deactivation
+	for_each(guard in enabled) {
+	    if (guard.condition)
+    		deactivate(guard.event)
+	}
+	return key_select
+}
+\end{lstlisting}
+
+Some additional 
+
 \subsection{Guarded Events}
 
-The three events operates as follows:
+The three events, when enabled, operates as follows:
 
 \begin{itemize}[topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
     \item Channel Read: specifies a channel read on a given channel, and stores the message in a given variable. The event is available when a sender is on the channel. 
@@ -391,14 +434,38 @@ The three events operates as follows:
     \item Skip: is always available. In other words, if no other events are available at the alternation initialization, the skip event is automatically selected. 
 \end{itemize}
 
-It might be tempting to suggest that the skip guards makes the alternation process asynchronous, but this is not the case. Whenever the alternation selects the skip event as a result of no other available events, it simply synchronizes on the Skip event. 
+It might be tempting to suggest that a skip event makes the alternation process asynch\-ronous, but this is not the case. Whenever the alternation selects the skip event as a result of no other available events, it simply synchronizes on the skip event. 
 
-\subsection{Event Selection and Fairness}
+Alternation can consist of multiple enabled channel read events. Only one enabled timeout and skip event will be registered. If multiple timeout events are enabled, the timeout event with the smallest expiration time will be used. If multiple skip events are enabled, the first skip event will be used. 
 
+An event is initially deactivated. During the alternation process, if the condition of the guard is true, the event is activated. Activating an event registers the alternation process' interest in synchronizing with the event. Deactivating an event unregisters this interest. 
 
+An event which is not available when activated has the added responsibility of resuming the alternation process when becoming available. It should only resume the alternation process if it is still suspended, as multiple events might become available before the alternation resumes execution.
+
+\subsection{Event Selection}
+\label{subsec:alternation_fairness}
+
+During the selection stage the set of available events are populated with one or more members. The following algorithm chooses an event from that set:
+
+\begin{enumerate}[topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item If set only contains one event, choose that event and goto \ref{line:alt_choose}.
+    \item If the set contains a skip event, remove it from the set.
+    \item Uniform pesudo\hyp{}randomly choose one event from the remaining set. 
+    \item Complete the associated action with the event. \label{line:alt_choose}
+    \item Return the key from the chosen event.
+\end{enumerate}
+
+If the selected event is a channel read, the data transfer completes and both processes on each end resumes. If the selected event is a timeout or skip, no additional actions are made and the alternation process continues. 
+
+\subsection{Fairness and Determinism}
+
+The use of a pseudo\hyp{}random choice of multiple available events makes it fair and non\hyp{}deterministic. The reasoning for this policy being fair is subtle. If it was not fair, starvation would occur when arbitrating between multiple available events. This is however only possible within finite amount of time, as the arbitration is uniform pseudo\hyp{}random. Eventually, all events will be chosen. This is the same design and reasoning the Go programming language uses \citep[see][Select statements]{golangspec}.
+
+This does make the choice non\hyp{}deterministic, as it is a pseudo\hyp{}random choice. The discussion between fairness and determinism is an age old debate within the concurrent system design, and for all practical reasons the alternation construct favors fairness over determinism. 
 
 
 \section{Timers}
+
 
 
 
