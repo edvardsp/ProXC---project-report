@@ -391,36 +391,34 @@ The second stage, selection, selects which event to synchronize on from the set 
 
 In the third stage, deactivation, every guard is iterated over and deactivated if condition is true.
 
-In Listing \ref{lst:alternation_process} is pseudocode of the following process stages shown.
-
-\begin{lstlisting}[style=CustomC,caption={Pseudocode of alternation process},label={lst:alternation_process}]
-int Alternation(guards) {
-	available = {}
-	key = 0
-	// Activation
-	for_each(guard in guards) {
-		if (guard.condition) {
-			activate(guard.event)
-			guard.event.key = key
-			if (guard.event.available) 
-				available.add(guard.event)
-		}
-		key++
-	}
-	// Selection
-	if (available.empty)
-		suspend()
-	key_select = select(available)
-	// Deactivation
-	for_each(guard in enabled) {
-	    if (guard.condition)
-    		deactivate(guard.event)
-	}
-	return key_select
-}
-\end{lstlisting}
-
-Some additional 
+%In Listing \ref{lst:alternation_process} is pseudocode of the following process stages shown.
+%
+%\begin{lstlisting}[style=CustomC,caption={Pseudocode of alternation process},label={lst:alternation_process}]
+%int Alternation(guards) {
+%	available = {}
+%	key = 0
+%	// Activation
+%	for_each(guard in guards) {
+%		if (guard.condition) {
+%			activate(guard.event)
+%			guard.event.key = key
+%			if (guard.event.available) 
+%				available.add(guard.event)
+%		}
+%		key++
+%	}
+%	// Selection
+%	if (available.empty)
+%		suspend()
+%	key_select = select(available)
+%	// Deactivation
+%	for_each(guard in enabled) {
+%	    if (guard.condition)
+%    		deactivate(guard.event)
+%	}
+%	return key_select
+%}
+%\end{lstlisting}
 
 \subsection{Guarded Events}
 
@@ -466,26 +464,99 @@ This does make the choice non\hyp{}deterministic, as it is a pseudo\hyp{}random 
 
 \section{Timers}
 
+Timers are used to suspend a process for a given amount of time. This is used in two situations: in a normal process execution, or in an alternation process. 
 
+In a normal process execution, whenever a timeout is specified, the process is suspended. The run\hyp{}time system places the process in the sleep tree based on the specified timeout period. The process is resumed by the run\hyp{}time system when the timeout period is expired.
+
+In an alternation process, the timeout is specified as a guarded event. When the event is activated, the alternation process is placed in the alternation sleep tree based on the specified timeout period. One of two things happens: either the timeout period is expired and the run\hyp{}time system registers the timeout event in the alternation available set. If the alternation process is still suspended, resume it. Or, the alternation process is resumed before the timeout expiration, and the timeout event is deactivated, removing it from the alternation sleep tree. 
 
 
 \section{Thread Specific Data}
 \label{sec:thread_specific_data}
 
+Each scheduler runs on its own permanent kernel\hyp{}thread. Regardless of a single\hyp{}core or multi\hyp{}core implementation, each scheduler has some (kernel\hyp{})Thread Specific Data, TSD for short. The TSD strictly consist of a link to the scheduler running on the given kernel\hyp{}thread. Accessing the TSD is context dependent. Two different process contexts with the same call can result in different scheduler links, depending if they run on the same kernel\hyp{}thread or not. 
 
+This link to the scheduler is used by the run\hyp{}time system to figure out which scheduler a given process belongs to. Picture it like this: whenever a process makes a call to the library, the run\hyp{}time system is invoked. The run\hyp{}time system has no context on which process or which scheduler the call is made from. Using the TSD, the run\hyp{}time system finds which scheduler belongs to this kernel\hyp{}thread, and in turn which process is currently running. With these links, the library call can be processed. 
+
+
+\section{API Design}
+\label{sec:api_design}
+
+The resulting API for the library, as a result of the design, is presented below. 
+
+\begin{itemize}[topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item \texttt{START}: initializes library and run\hyp{}time system. Takes a function which starts as main process. Must be called before any other library call.
+    \item \texttt{EXIT}: exits the library. The run\hyp{}time system will clean up any resources, and returns as if START call returned. Can be called from any process context. 
+    \item \texttt{ARGN}: returns the Nth argument for a process. 
+    \item \texttt{YIELD}: explicitly yields the running process to the scheduler.
+    \item \texttt{SLEEP}: suspends the running process for a relative given amount of time. Granularity of microseconds. 
+    \item \texttt{PROC}: creates a process block for a composite process tree. Takes a function and zero\hyp{}or\hyp{}more function arguments. 
+    \item \texttt{PAR}: creates a parallel block for a composite process tree. Takes one\hyp{}or\hyp{}more composite process blocks and returns a parallel block.
+    \item \texttt{SEQ}: creates a sequential block for a composite process tree. Takes one\hyp{}or\hyp{}more composite process blocks and returns a sequential block.
+    \item \texttt{GO}: asynchronously spawns a composite process. Takes one composite process block.
+    \item \texttt{RUN}: synchronously spawns a composite process. Takes one composite process block.
+    \item \texttt{CHAN\_GUARD}: creates a guarded channel read for an alternation process. Takes a conditional, a channel, variable to store data in, and size of the data, and returns a guarded event.
+    \item \texttt{TIME\_GUARD}: creates a guarded timeout for an alternation process. Takes a conditional and a relative expiration time, and returns a guarded event.
+    \item \texttt{SKIP\_GUARD}: creates a guarded skip for an alternation process. Takes a conditional, and returns a guarded event.
+    \item \texttt{ALT}: creates and executes an alternation process. Takes one\hyp{}or\hyp{}more guarded events, and returns the key for the synchronized event. 
+    \item \texttt{CHOPEN}: creates a channel of a given type. Takes the size of the data type, and returns a channel.
+    \item \texttt{CHCLOSE}: closes a given channel.
+    \item \texttt{CHWRITE}: writes data on a given channel. Takes a channel, the variable to be written and the size of the variable, and returns if the operation was a success.
+    \item \texttt{CHREAD}: reads data on a given channel. Takes a channel, a variable to write to and the size of the variable, and returns if the operation was a success.
+\end{itemize}
 
 
 \section{Descheduling Points}
+\label{sec:descheduling_points}
 
+The ability to express concurrency relies on running processes giving the control of execution back, or yielding, to the scheduler at regular intervals, since the scheduler does not use preemption to regain control. This is done through designated descheduling points, either implicitly defined in library calls, or explicitly defined through the \texttt{YIELD} command.
 
+The following library calls and programming contexts \underline{\smash{will}} result in a yield:
 
+\begin{multicols}{2}
+\begin{itemize}[topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item \texttt{YIELD}
+    \item \texttt{EXIT}
+    \item \texttt{SLEEP}
+    \item \texttt{RUN}
+    \item Processes returning
+\end{itemize}
+\end{multicols}
 
-\section{API}
+The following \underline{\smash{may}} result in a yield:
 
+\begin{multicols}{2}
+\begin{itemize}[topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item \texttt{GO}
+    \item \texttt{ALT}
+    \item \texttt{CHWRITE}
+    \item \texttt{CHREAD}
+\end{itemize}
+\end{multicols}
 
+The following \underline{\smash{will not}} result in a yield:
+
+\begin{multicols}{2}
+\begin{itemize}[topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item \texttt{ARGN}
+    \item \texttt{PROC}
+    \item \texttt{PAR}
+    \item \texttt{SEQ}
+    \item \texttt{CHAN\_GUARD}
+    \item \texttt{TIME\_GUARD}
+    \item \texttt{SKIP\_GUARD}
+    \item \texttt{CHOPEN}
+    \item \texttt{CHCLOSE}
+    \item Normal function calls
+    \item Normal functions returning
+\end{itemize}
+\end{multicols}
 
 
 \section{Influences}
+\label{sec:influences}
 
+Some external influences from existing concurrent programming languages has affected the design choices. The primary source of influences comes from occam, XC and Go, all FIXME discussed in Section \ref{subsec:csp_prog_lang}. The libraries C++CSP2 and JCSP has also influenced some design choices, also FIXME discussed in Section \ref{subsec:csp_prog_lib}.
 
+Occam directly influences the use of composite processes, as well as the keywords \texttt{PAR} and \texttt{SEC} which are also used to describe parallel and sequential processes. The keyword \texttt{RUN} comes from C++CSP2 and JCSP, which are used to synchronously execute a composite process. The keyword \texttt{GO} is influenced by Go, which uses \texttt{go} to asynchronously spawn single functions as goroutines. The keyword \texttt{PROC} is influenced by C++CSP2 and JCSP, which explicitly creates class instances as processes in a composite process definition. 
 
