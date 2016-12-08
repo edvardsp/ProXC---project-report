@@ -6,6 +6,92 @@
 \chapter{Implementation}
 \label{ch:implementation}
 
+The library will be written in C, with standard GNU99. FIXME why. POSIX.
 
-\section{Continuation of design}
+
+\section{Data Structures}
+
+Some data structures was specified in the design, namely a queue and a tree structure. These data structures are not supported in the C standard library, and has to either be implemented or use an existing third\hyp{}party implementation.
+
+For this project, the BSD libc implementations of queues and trees, \texttt{sys/queue.h} \citep{manqueue} and \texttt{sys/tree.h} \citep{mantree} respectively, is used. \texttt{sys/queue.h} implements four types of queues: singly\hyp{}linked lists, singly\hyp{}linked tail queues, lists, and tail queues. \texttt{sys/tree.h} implements two types of trees: red\hyp{}black trees and splay trees. 
+
+These implementations are header\hyp{}only, dependency free, requires no dynamic allocations, and are type\hyp{}safe. This is highly beneficial for the development of the run\hyp{}time system. No dynamic allocations will also lower the run\hyp{}time overhead. 
+
+Tail\hyp{}queues, hereafter called tailq, and red\hyp{}black trees, hereafter called rb\hyp{}tree, will be used in the scheduler implementation. 
+
+
+\section{User\hyp{}threads and Context Switching}
+
+User\hyp{}threads are implemented as coroutines. Each user\hyp{}thread is its own coroutines. There are multiple ways to implement coroutines. Most known approach is using the library routines \texttt{setjmp} and \texttt{longjmp} to provide non\hyp{}local flow between different call frames on the stack. This is however not a portable solution, as jumping down the stack relies on undefined behaviour. The C standard does not specify deallocated stack frames to retain in memory when jumping down the stack, which would break on architectures which frees deallocated stack frames.
+
+Another approach is using a duff's device \citep{duffsdevice}, splitting up a process into atomic instructions between scheduling points. This is both portable and does not rely on undefined behaviour. However, the procedure of splitting up and defining the atomic instructions can be difficult to implement. This has usually in existing libraries been implemented using macro magic, which is not favorable for this implementation.
+
+The third approach is stackful coroutines, which is used in this implementation. This allows for fast context switches between coroutines, as they are usually implemented in a few inline assembly instructions. However, the stack has in most implementations fixed size, which makes stack overflow a potential problem. This is discussed in more detail in Section FIXME. 
+
+Each coroutine has its own stack and a context. The stack acts as the stack frame of the coroutine execution, and is either allocated on the stack (of the main process) or on the heap. The context is a snapshot of the processor registers at a given execution time, and is stored in a C\hyp{}struct. The snapshot consists of registers that must be preserved as of System V ABI calling conventions, and the program counter. Preserved registers differs from calling convention to calling convention, depending on which architecture and operating system is used, which makes portable implementation a challenge.  
+
+A context\hyp{}switch from a coroutine \textit{c1} to a coroutine \textit{c2} does the following: \textit{c1} invokes a context switch from its own context to the context of \textit{c2}. A snapshot of the processors registers are stored in \textit{c1}'s context struct, and the snapshot stored in \textit{c2}'s context struct is loaded into the processors registers. The program counter is the last register to be loaded, as this triggers the continuation of \textit{c2}. From now on, the processors is executing in the coroutine \textit{c2}.
+
+Currently, context switching is only implemented for System V x86\_64 and i386 platforms. The context struct for i386 and x86\_64 is in Listing \ref{lst:ctx_i386} and \ref{lst:ctx_x86_64}, respectively. Note that each register is stored as 32\hyp{}bit or 64\hyp{}bit variables, as i386 is a 32\hyp{}bit platform and x84\_64 is a 64\hyp{}bit platform, and the registers are of such width.
+
+\noindent\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={Context struct for i386},style={CustomC},label={lst:ctx_i386}]
+struct Context {
+    // preserver registers
+    uint32_t ebx;  
+    uint32_t esi;
+    uint32_t edi;
+    uint32_t ebp;
+    uint32_t esp;
+    // program counter
+    uint32_t eip;
+};
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={Context struct for x86\_64},style={CustomC},label={lst:ctx_x86_64}]
+struct Context {
+    // preserved registers
+    uint64_t rbx;  
+    uint64_t rsp;
+    uint64_t rbp;
+    uint64_t r12;
+    uint64_t r13;
+    uint64_t r14;
+    uint64_t r15;
+    // program counter
+    uint64_t rip;
+};
+\end{lstlisting}
+\end{minipage}
+
+The context switching procedure has the following C function prototype.
+
+\begin{lstlisting}[style={CustomC},frame={},numbers=none]
+void context_switch(Context *from, Context *to);
+\end{lstlisting}
+
+It is however implemented in inline assembly, as direct access to registers is not supported in native C. See Appendix \ref{ch:assembly} for full implementation.
+
+
+\section{Run\hyp{}time System}
+
+
+\subsection{Scheduler}
+
+\subsection{Processes}
+
+\section{Composite Processes}
+
+\section{Channels}
+
+\section{Alternation}
+
+\section{Timers}
+
+\section{Thread Specific Data}
+
+
+
+
 

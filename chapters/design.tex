@@ -474,6 +474,8 @@ In an alternation process, the timeout is specified as a guarded event. When the
 \section{Thread Specific Data}
 \label{sec:thread_specific_data}
 
+FIXME rename to Thread\hyp{}local storage
+
 Each scheduler runs on its own permanent kernel\hyp{}thread. Regardless of a single\hyp{}core or multi\hyp{}core implementation, each scheduler has some (kernel\hyp{})Thread Specific Data, TSD for short. The TSD strictly consist of a link to the scheduler running on the given kernel\hyp{}thread. Accessing the TSD is context dependent. Two different process contexts with the same call can result in different scheduler links, depending if they run on the same kernel\hyp{}thread or not. 
 
 This link to the scheduler is used by the run\hyp{}time system to figure out which scheduler a given process belongs to. Picture it like this: whenever a process makes a call to the library, the run\hyp{}time system is invoked. The run\hyp{}time system has no context on which process or which scheduler the call is made from. Using the TSD, the run\hyp{}time system finds which scheduler belongs to this kernel\hyp{}thread, and in turn which process is currently running. With these links, the library call can be processed. 

@@ -14,6 +14,7 @@
 %\usepackage{natbib}
 \usepackage[numbers]{natbib} % Use this command if you want to refer to the literature by numbers, e.g., [1]
 \usepackage{setspace}
+\usepackage{parcolumns}
 \linespread{1.5}
 
 \usepackage{afterpage}
@@ -47,6 +48,32 @@
     showstringspaces=false,
     extendedchars=false,
     escapechar=@,
+    breaklines=true,
+    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+    frame=tb,
+    aboveskip=1em,
+    belowskip=1em,
+    numbers=left,
+    showtabs=false,
+    showspaces=false,
+    showstringspaces=false,
+    identifierstyle=\ttfamily,
+    keywordstyle=\color{blue},
+    commentstyle=\color{yellow!30!black},
+    stringstyle=\color{green!40!black},
+    numberstyle=\color{black},
+    identifierstyle=\color{black},
+}
+\lstdefinestyle{CustomAsm}{
+    tabsize=4,    
+    language=[x86masm]Assembler,
+    basicstyle=\footnotesize\ttfamily,
+    upquote=true,
+    aboveskip={1.5\baselineskip},
+    columns=fixed,
+    showstringspaces=false,
+    extendedchars=false,
+    escapechar=|,
     breaklines=true,
     prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
     frame=tb,
