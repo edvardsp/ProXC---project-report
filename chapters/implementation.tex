@@ -19,6 +19,31 @@ These implementations are header\hyp{}only, dependency free, requires no dynamic
 
 Tail\hyp{}queues, hereafter called tailq, and red\hyp{}black trees, hereafter called rb\hyp{}tree, will be used in the scheduler implementation. 
 
+FIXME examples.
+
+
+\section{Thread\hyp{}specific Data}
+
+TSD is implemented using \texttt{pthread\_key\_t} type, which is a POSIX implementation. The TSD type \texttt{pthread\_key\_t} stores a single variable of type \texttt{void*}. One TSD variable is used in this implementation, which is a pointer to the corresponding scheduler for each kernel\hyp{}thread. With the TSD variable, the internal procedure \texttt{scheduler\_self} returns a pointer the corresponding scheduler struct for the given kernel\hyp{}thread. This is only used internally in the run\hyp{}time system, and is invisible to the programmer. The POSIX method \texttt{pthread\_getspecific()} is used to get the actual TSD variable.
+
+\begin{lstlisting}[style={CustomC},caption={Procedure to find the scheduler for a given kernel\hyp{}trhead}]
+pthread_key_t g_key_scheduler;
+Scheduler* scheduler_self(void) {
+    return pthread_getspecific(g_key_scheduler);
+}
+\end{lstlisting}
+
+This can also be used to find the current running process struct, as the scheduler always records which process is currently running. It is called \texttt{process\_self}, and is also an internal procedure for the run\hyp{}time system, just as the \texttt{scheduler\_self} procedure.
+
+\begin{lstlisting}[style={CustomC},caption={Procedure to find the current running process}]
+Process* process_self(void) {
+    return scheduler_self()->current_process;
+}
+\end{lstlisting}
+
+Since this is a single\hyp{}core implementation, a simple global variable would achieve the same results as a \texttt{pthread\_key\_t} variable. However, it would not work for multi\hyp{}processor support. So \texttt{pthread\_key\_t} is used for a cleaner, scalable and portable implementation.
+
+FIXME overhead.
 
 \section{User\hyp{}threads and Context Switching}
 
@@ -32,12 +57,12 @@ Each coroutine has its own stack and a context. The stack acts as the stack fram
 
 A context\hyp{}switch from a coroutine \textit{c1} to a coroutine \textit{c2} does the following: \textit{c1} invokes a context switch from its own context to the context of \textit{c2}. A snapshot of the processors registers are stored in \textit{c1}'s context struct, and the snapshot stored in \textit{c2}'s context struct is loaded into the processors registers. The program counter is the last register to be loaded, as this triggers the continuation of \textit{c2}. From now on, the processors is executing in the coroutine \textit{c2}.
 
-Currently, context switching is only implemented for System V x86\_64 and i386 platforms. The context struct for i386 and x86\_64 is in Listing \ref{lst:ctx_i386} and \ref{lst:ctx_x86_64}, respectively. Note that each register is stored as 32\hyp{}bit or 64\hyp{}bit variables, as i386 is a 32\hyp{}bit platform and x84\_64 is a 64\hyp{}bit platform, and the registers are of such width.
+Currently, context switching is only implemented for x86\_64 and i386 platforms. The context struct for i386 and x86\_64 is in Listing \ref{lst:ctx_i386} and \ref{lst:ctx_x86_64}, respectively. Note that each register is stored as 32\hyp{}bit or 64\hyp{}bit variables, as i386 is a 32\hyp{}bit platform and x84\_64 is a 64\hyp{}bit platform, and the registers are of such width.
 
 \noindent\begin{minipage}{.45\textwidth}
 \begin{lstlisting}[caption={Context struct for i386},style={CustomC},label={lst:ctx_i386}]
 struct Context {
-    // preserver registers
+    // preserved registers
     uint32_t ebx;  
     uint32_t esi;
     uint32_t edi;
@@ -73,13 +98,112 @@ void context_switch(Context *from, Context *to);
 
 It is however implemented in inline assembly, as direct access to registers is not supported in native C. See Appendix \ref{ch:assembly} for full implementation.
 
+FIXME stack and context initialization.
+
+\section{Yielding}
+
+Yielding is used to transfer the flow of control from a running process back to the scheduler. To achieve this, the context of both the running process and the scheduler must be available. Getting either the scheduler pointer or the process pointer is enough, as the scheduler and the process has a pointer to each other. 
+
+For the internal process, calling the \texttt{scheduler\_self} would be sufficient, however there is a overhead penalty of acquiring the TSD variable. The yielding procedure is a frequently called procedure by the run\hyp{}time system, and the overhead would quickly accumulate. A simple optimization would be passing the process pointer if it is already available for the caller, and if not just pass a \texttt{NULL} pointer and find the process struct through the scheduler pointer. 
+
+See Listing \ref{lst:yielding_procedure} for both internal and external procedure implementation.
+
+\begin{lstlisting}[style={CustomC},caption={Internal and external yielding procedure},label={lst:yielding_procedure}]
+// Internal procedure
+void process_yield(Process *process) {
+    Scheduler *scheduler = NULL;
+    if (process == NULL) { // Process struct is not known
+        scheduler = scheduler_self();
+        process = scheduler->current_process;
+    } else { // Process struct is known
+        scheduler = process->scheduler;
+    }
+    context_switch(&process->context, &scheduler->context);
+}
+// External procedure
+void YIELD(void) {
+    process_yield(NULL);
+}
+\end{lstlisting}
+
+Note that the external procedure has to call the yielding procedure with NULL as argument, since the process pointer is not available. The internal process will then find what the process pointer is.
 
 \section{Run\hyp{}time System}
 
+The function call \texttt{START} starts the run\hyp{}time system, and takes a function pointer to the main process. The run\hyp{}time system creates a scheduler, and creates a process with the given function pointer. The main process is then added to the ready queue of the scheduler, as well as registered as the main process in the scheduler. After the initialization, the main loop of the scheduler is invoked. Whenever the scheduler exits the main loop, the scheduler is freed and the \texttt{START} procedure returns. 
+
+\begin{lstlisting}[style={CustomC},caption={\texttt{START} procedure}]
+void START(ProcFxn fxn) {
+    Scheduler *scheduler;
+    scheduler_create(&scheduler);
+    Process *process;
+    process_create(&process, fxn);
+    scheduler->main_process = process;
+    scheduler_addready(process);
+    // Start the scheduler main loop
+    scheduler_run();
+
+    scheduler_free(scheduler);
+}
+\end{lstlisting}
+
+The function call \texttt{EXIT} signals the scheduler to exit the main loop. The scheduler exit flag i set, and context switches back to the scheduler. This in turn will return to the \texttt{START} procedure, which cleans up the run\hyp{}time system. 
+
+\begin{lstlisting}[style={CustomC},caption={\texttt{EXIT} procedure}]
+void EXIT(void) {
+    Scheduler *scheduler = scheduler_self();
+    scheduler->is_exit = 1;
+    process_yield(scheduler->current_process);
+}
+\end{lstlisting}
 
 \subsection{Scheduler}
 
+The create procedure of the scheduler is called \texttt{scheduler\_create}. When created, the scheduler struct is allocated on the heap. The default stack size for the coroutines is determined, the page size of the memory management unit is stored, and the exit flag is nulled out. The scheduler struct pointer is then registered in the TSD variable. The context of the scheduler and the two tailqs and rb\hyp{}trees is initialized.
+
+The cleanup procedure of the scheduler is called \texttt{scheduler\_free}. When cleaned up, the total queue is iterated over and calls the cleanup procedure for each process. Lastly, the scheduler struct pointer is freed up. 
+
+The scheduler main loop follows the design in Section \ref{subsec:scheduler}. Some slight simplifications has been made as a result of the implementation being single\hyp{}core. 
+
+When checking the ready queue and no processes are ready, the kernel\hyp{}thread is suspended by sleeping the minimal expiration time in either sleep or alternation sleep rb\hyp{}tree. The wakeup procedure, which checks both sleep rb\hyp{}trees for expired timeouts, are straight forward. However, some slight care has to be taken with the alternation sleep tree. Whenever an sleeping alternation has expired, the scheduler must check if the process has not already been added to the ready queue by another process. The scheduling policy is currently a FIFO queue on the ready queue. 
+
+Registering the current process is done by setting the next process as current process, and setting the state of that process to \textit{Running}. Then a context switch is done to that process. One additional action is done after the running process yields. A procedure checking the stack usage of the process will advise the kernel of memory usage if the stack usage exceeds a certain limit. This is to reduce the total memory footprint of the run\hyp{}time system. See Listing \ref{lst:scheduler_registering_context_switch} for reference.
+
+\begin{lstlisting}[style={CustomC},caption={Scheduler registering and context switch to running process},label={lst:scheduler_registering_context_switch}]
+next_process->state = PROCESS_RUNNING;
+scheduler->current_process = next_process;
+context_switch(&scheduler->context, &next_process->context);
+scheduler->current_process = NULL;
+memory_advise(next_process->stack);
+\end{lstlisting}
+
+The epilogue does the following actions on the resulting state of the yielding process. 
+
+\begin{lstlisting}[style={CustomC},caption={Handling of process state in epilogue},label={lst:process_state_epilogue}]
+switch(next_process->state) {
+case PROC_RUNNING:
+case PROC_READY: // fallthrough
+    scheduler_addreadyQ(scheduler, next_process);
+    break;
+case PROC_ENDED:
+    scheduler->is_exit = scheduler->is_exit || (next_process == scheduler->main_proc);
+    process_free(next_process);
+    break;
+case PROC_WAIT:
+case PROC_SLEEP: // fallthrough
+    // Do nothing
+    break;
+case ERROR:
+    process_error(next_process);
+    break;
+}
+\end{lstlisting}
+
+FIXME scheduler function prototypes?
+
 \subsection{Processes}
+
+
 
 \section{Composite Processes}
 
@@ -89,7 +213,6 @@ It is however implemented in inline assembly, as direct access to registers is n
 
 \section{Timers}
 
-\section{Thread Specific Data}
 
 
 

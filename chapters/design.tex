@@ -30,7 +30,7 @@ The run\hyp{}time system at start up spawns a number of kernel\hyp{}threads equa
 From here on, the term ``\textit{process}'' means a single user\hyp{}thread meant to run sequential code from a program. The term ``\textit{parent scheduler}'' in the context of a process means the scheduler which the process is designated to, i.e. both reside on the same kernel\hyp{}thread. The term ``\textit{running process}'' corresponds to the process that is currently executed on a given kernel\hyp{}thread, given that the scheduler has resumed a process. The term ``\textit{ownership}'' in the context of a scheduler owning a process means the scheduler is a parent scheduler to the process. The term ``root process'' in the context of composite processes means the process that defined and spawned the composite process.
 
 \subsection{Scheduler}
-\label{sec:scheduler}
+\label{subsec:scheduler}
 
 The scheduler keeps track of the execution state of a kernel\hyp{}thread. Each scheduler knows which process is the main process, as this is important later. As well, it keeps track of the current process running. 
 
