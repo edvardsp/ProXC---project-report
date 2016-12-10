@@ -37,7 +37,7 @@ This can also be used to find the current running process struct, as the schedul
 
 \begin{lstlisting}[style={CustomC},caption={Procedure to find the current running process}]
 Process* process_self(void) {
-    return scheduler_self()->current_process;
+    return scheduler_self()->running_process;
 }
 \end{lstlisting}
 
@@ -159,9 +159,46 @@ void EXIT(void) {
 
 \subsection{Scheduler}
 
-The create procedure of the scheduler is called \texttt{scheduler\_create}. When created, the scheduler struct is allocated on the heap. The default stack size for the coroutines is determined, the page size of the memory management unit is stored, and the exit flag is nulled out. The scheduler struct pointer is then registered in the TSD variable. The context of the scheduler and the two tailqs and rb\hyp{}trees is initialized.
+The scheduler is realized by a scheduler struct with method functions which operates on a given scheduler struct. The scheduler struct type is shown in Listing \ref{lst:scheduler_struct_type}.
 
-The cleanup procedure of the scheduler is called \texttt{scheduler\_free}. When cleaned up, the total queue is iterated over and calls the cleanup procedure for each process. Lastly, the scheduler struct pointer is freed up. 
+\begin{lstlisting}[style={CustomC},caption={Scheduler struct type},label={lst:scheduler_struct_type}]
+struct Scheduler {
+    Context context;
+    size_t  stack_size;
+    size_t  page_size; 
+    int     is_exit;
+    Process *main_process;
+    Process *running_process;
+    // queues
+    struct ProcessQ totalQ;
+    struct ProcessQ readyQ;
+    // trees
+    struct ProcessRB sleepRB;
+    struct PRocessRB altsleepRB;
+};
+\end{lstlisting}
+
+%Listing \ref{} shows the static and non\hyp{}static methods which operates on a given scheduler struct.
+%
+%\begin{lstlisting}[style={CustomC},caption={Scheduler struct type},label={lst:scheduler_methods}]
+%Scheduler* scheduler_self(void);
+%int  scheduler_create(Scheduler **new_scheduler);
+%void scheduler_free(Scheduler *scheduler);
+%void scheduler_addready(Process *process);
+%void scheduler_remready(Process *process);
+%void scheduler_addsleep(Process *process);
+%void scheduler_remsleep(Process *process);
+%void scheduler_addaltsleep(Guard *guard);
+%void scheduler_remaltsleep(Guard *guard);
+%void _scheduler_wakeup(Scheduler *scheduler);
+%void _scheduler_checkQs(Scheduler *sched);
+%int  _scheduler_running(Scheduler *sched);
+%int  scheduler_run(void);
+%\end{lstlisting}
+
+The scheduler constructor is called \texttt{scheduler\_create}. When created, the scheduler struct is allocated on the heap. The default stack size for the coroutines is determined, the page size of the memory management unit is stored, and the exit flag is nulled out. The scheduler struct pointer is then registered in the TSD variable. The context of the scheduler and the two tailqs and rb\hyp{}trees is initialized.
+
+The scheduler destructor is called \texttt{scheduler\_free}. When cleaned up, the total queue is iterated over and calls the cleanup procedure for each process. Lastly, the scheduler struct pointer is freed up. 
 
 The scheduler main loop follows the design in Section \ref{subsec:scheduler}. Some slight simplifications has been made as a result of the implementation being single\hyp{}core. 
 
@@ -186,7 +223,9 @@ case PROC_READY: // fallthrough
     scheduler_addreadyQ(scheduler, next_process);
     break;
 case PROC_ENDED:
-    scheduler->is_exit = scheduler->is_exit || (next_process == scheduler->main_proc);
+    scheduler->is_exit = scheduler->is_exit 
+                      || (next_process == scheduler->main_process);
+    composite_parse(next_process->composite_block);
     process_free(next_process);
     break;
 case PROC_WAIT:
@@ -199,13 +238,200 @@ case ERROR:
 }
 \end{lstlisting}
 
-FIXME scheduler function prototypes?
-
 \subsection{Processes}
 
+A process is realized by a process struct with method functions which operates on a given process struct. The process struct type is shown in Listing \ref{lst:process_struct_type}. The scheduler related node members is not directly used by the process struct, but by the data structure methods.
 
+\begin{lstlisting}[style={CustomC},caption={Process struct type},label={lst:process_struct_type}]
+typedef void (*ProcessFxn)(void);
+struct Process {
+    Scheduler *scheduler;
+    enum {
+        PROC_ERROR = 0,
+        PROC_READY,
+        PROC_RUNNING,
+        PROC_ENDED,
+        PROC_SLEEP,
+        PROC_WAIT
+    } state;
+    // fxn and args 
+    ProcessFxn fxn;
+    struct {
+        size_t num;
+        void   **ptr; @\label{line:process_args}@
+    } args;
+    // coroutine related
+    Context context;
+    struct {
+        size_t size;
+        size_t used;
+        void   *ptr;
+    } stack;
+    // process sleep metric
+    uint64_t sleep_usec;
+    // composite process related
+    Composite *composite_block; @\label{line:composite_block}@
+    // scheduler tailq and rb-tree nodes
+    TAILQ_ENTRY(Process) totalQ_node;
+    TAILQ_ENTRY(Process) readyQ_node;
+    RB_ENTRY(Process) sleepRB_node;
+    RB_ENTRY(Process) altsleepRB_node;
+};
+\end{lstlisting}
+
+The process constructor is called \texttt{process\_create}, and takes a function pointer as an argument. The function pointer is the function the process is to execute. When created, the process struct is allocated on the heap. The stack is allocated and the context is initialized. The function pointer is set, but not the arguments. The state is set to \textit{Ready}, and the scheduler pointer is set to the appointed scheduler through \texttt{scheduler\_self} method. The rest of the struct members, except the tailq and rb\hyp{}tree nodes, are zero\hyp{}initialized. Lastly, the process struct is inserted in the total queue of the scheduler. This gives the ownership of the process to the scheduler. 
+
+The process destructor is called \texttt{process\_free}. The process is removed from the total queue of the scheduler, and the stack and argument array is freed. Lastly, the process struct is freed.
+
+The process execution flow does not start from the specified function pointer. Instead, the process execution starts at an internal library function \texttt{process\_mainfxn}. This procedure appropriately calls the function pointer, and sets the process state to \textit{Ended} and yields when the process function returns. The process main function is shown in Listing \ref{lst:process_main_function}. This approach of abstracting the function call away, at Line \ref{line:function_call} in Listing \ref{lst:process_main_function}, constrains the number of function arguments to a fixed number if the arguments were to be passed directly in the function call.
+
+\begin{lstlisting}[style={CustomC},caption={Process main function},label={lst:process_main_function}]
+void process_mainfxn(Process *process) {
+    process->fxn(); @\label{line:function_call}@
+    process->state = PROC_ENDED;
+    process_yield(process);
+    // This is never reached
+}
+\end{lstlisting}
+
+Allowing arbitrary number of function arguments is much more expressive than a fixed number, which is why the arguments are rather stored as an argument array in the process struct, seen at Line \ref{line:process_args} in Listing \ref{lst:process_struct_type}. This argument array can then be accessed through the API function \texttt{ARGN}, see Listing \ref{lst:argn_api_call}. This does however constrain the type of arguments to only pointers. 
+
+\begin{lstlisting}[style={CustomC},caption={\texttt{ARGN} API function},label={lst:argn_api_call}]
+void* ARGN(size_t n) {
+    Process *process = process_self();
+    return (n < process->args.num)
+        ? process->args.ptr[n]
+        : NULL;
+}
+\end{lstlisting}
+
+The added flexibility of having arbitrary number of arguments does in my opinion outweigh the added overhead of storing and accessing the arguments through API calls.
+
+Since function arguments are optional, the argument array is populated by a separate meth\-od \texttt{process\_setargs}. It takes a variadic list of void pointers, allocates an argument array, and copies over the pointers from the variadic list to the argument array. Example of how this is used by the run\hyp{}time system when creating a process is shown in Listing \ref{lst:process_setargs_example}.
+
+\begin{lstlisting}[style={CustomC},caption={Process creation example example},label={lst:process_setargs_example}]
+void process_setargs(Process *process, va_list args);
+// Takes function arguments as a variadic list 
+Process* example_create_process(ProcessFxn fxn, ...){
+    Process *process;
+    process_create(&process, fxn);
+    va_list args;
+    va_start(args, fxn);
+    process_setargs(process, args);
+    va_end(args);
+    return process;
+}
+\end{lstlisting}
+
+This is why the process constructor does not allocate and populate the argument array, while the destructor frees the argument array. 
 
 \section{Composite Processes}
+
+Composite processes are implemented as node trees, following the design in Section \ref{sec:composite_processes} with some slight modifications. The challenge is how the composite tree blocks are implemented. One approach is to create a ``\textit{god}'' struct for the block type, containing all data necessary for each block type. Another more modular approach is to create a struct for each composite tree block type, and one generic block type. The generic block is the interface, which his reinterpret casted to the corresponding composite tree block type. The latter approach is used in this implementation.
+
+Five structs are defined: a Header, Block, ProcBlock, ParBlock, and SeqBlock. Go and Run is not used as they are optimized away, explained later. The header struct defines the common interface between the generic block and the typed blocks. Listing \ref{lst:header_struct_type} shows the header struct. The type of the block is set in the header file, the parent of the block, some variables for finding the root of the composite process tree, and a pointer to an optional root process. The node variable is for Block queues in \texttt{PAR} and \texttt{SEQ} blocks.
+
+\begin{lstlisting}[style={CustomC},caption={Header struct type},label={lst:header_struct_type}]
+typedef struct {
+    enum {
+        PROC_BLOCK,
+        PAR_BLOCK,
+        SEQ_BLOCK
+    } type;
+    Block *parent;
+    int is_root;
+    Process *root_process;
+    // node tree related
+    TAILQ_ENTRY(Block) node;
+} Header;
+\end{lstlisting}
+
+All structs Block, ProcBlock, ParBlock and SeqBlock must have the header struct as a member variable, and it must be the \underline{\smash{first}} member variable. This allows the composite process procedures and block queues to work on the generic block struct. To determine the block type, inspect the header member. Then reinterpret cast the block pointer to the correct block type through type punning. Listing \ref{lst:block_struct_type},\ref{lst:procblock_struct_type},\ref{lst:parblock_struct_type},\ref{lst:seqblock_struct_type} shows the different block types.
+
+\noindent\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={Generic Block struct type},style={CustomC},label={lst:block_struct_type}]
+typedef struct {
+    Header header;
+} Block;
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={\texttt{PROC} Block struct type},style={CustomC},label={lst:procblock_struct_type}]
+typedef struct {
+    Header header;
+    Process *process;
+} ProcBlock;
+\end{lstlisting}
+\end{minipage}
+\noindent\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={\texttt{PAR} Block struct type},style={CustomC},label={lst:parblock_struct_type}]
+typedef struct {
+    Header header;
+    struct {
+        size_t num;
+        struct BlockQ Q;
+    } childs;
+} ParBlock;
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={\texttt{SEQ} Block struct type},style={CustomC},label={lst:seqblock_struct_type}]
+typedef struct {
+    Header header;
+    struct {
+        size_t num;
+        Block *current;
+        struct BlockQ Q;
+    } childs;
+} SeqBlock;
+\end{lstlisting}
+\end{minipage}
+
+Type punning is done through union casting. In other words, a pointer is casted to a union of the source and destination type, and reading from the destination type yields the reinterpreted pointer. This is the correct way to achieve type punning without breaking strict aliasing optimizations. A convenience macro can be made to easily achieve type punning, shown in Listing \ref{lst:type_punning}. Note that union casting and \texttt{\_\_typeof\_\_} is a GNU C extension.
+
+\begin{lstlisting}[style={CustomC},caption={Type punning through union cast},label={lst:type_punning}]
+#define BLOCK_CAST(block, destType) \
+    (((union {__typeof__(block) src; destType dst;})block).dst)
+\end{lstlisting}
+
+Listing \ref{lst:type_punning_example} shows how type punning is used to convert from a generic block struct to the given typed block, and back from typed block to generic block type. This is used any time when the run\hyp{}time system either goes either way between a generic block to a typed block. 
+
+\begin{lstlisting}[style={CustomC},caption={Type punning example},label={lst:type_punning_example}]
+Block* type_punning_example(Block *block) {
+    switch (block->type) {
+    case PROC_BLOC: {
+        ProcBlock *proc_block = BLOCK_CAST(block, ProcBlock*);
+        // ... work ...
+        return BLOCK_CAST(proc_block, Block*);
+    }
+    case PAR_BLOCK: {
+        ParBlock *par_block = BLOCK_CAST(block, ParBlock*);
+        // ... work ...
+        return BLOCK_CAST(par_block, Block*);
+    }
+    case SEQ_BLOCK: {
+        ProcBlock *seq_block = BLOCK_CAST(block, SeqBlock*);
+        // ... work ...
+        return BLOCK_CAST(seq_block, Block*);
+    }
+}
+\end{lstlisting}
+
+Defining a composite tree process is done through the API calls \texttt{PROC}, \texttt{PAR}, \texttt{SEQ}, \texttt{GO}, and \texttt{RUN}. The function prototypes for the API calls are shown in Listing \ref{lst:composite_process_api_prototypes}. Both \texttt{PAR} and \texttt{SEQ} has a single child block as first argument, because a non\hyp{}variadic argument must be specified before the variadic list. Also, if the variadic list is empty, the given block can be optimized away as a result of the redundancy identity shown in Figure \ref{fig:composite_axiom}.
+
+\begin{lstlisting}[style={CustomC},caption={Composite process API prototypes},label={lst:composite_process_api_prototypes}]
+Block* PROC(ProcessFxn fxn, ...);
+Block* PAR(Block *first_child, ...);
+Block* SEQ(Block *first_child, ...);
+void GO(Block *root);
+void RUN(Block *root);
+\end{lstlisting}
+
+Currently, the API calls \texttt{PROC}, \texttt{PAR} and \texttt{SEQ} allocates a typed block on the heap. \texttt{GO} or \texttt{RUN} does not however allocate any typed block on the heap. \texttt{PROC} also creates a process with the given function pointer and arguments, and sets the process pointer in the typed block to the created process. \texttt{PAR} and \texttt{SEQ}, if two or more childs given, inserts each child in the block queue and records the number of childs. \texttt{SEQ} initializes the current block pointer to the first child. 
+
+Both API calls \texttt{GO} and \texttt{RUN} receives a root block, which the root flag of the block is set to true. \texttt{GO} traverses the resulting composite process tree, starting at the root block. When traversing returns, the API call returns as well, and the running process continues execution. \texttt{RUN} sets the root process pointer to the running process. Then, traverses the resulting composite process tree, starting at the root block. When traverses returns, the running process yields with the process state set to \textit{Wait}. The running process is resumed when the root block finishes.
+
+The traversal implementation is a very straightforward
 
 \section{Channels}
 
