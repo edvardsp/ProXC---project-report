@@ -567,5 +567,5 @@ The list of guards is stored as a variadic lsit and sent to as arguments to the 
 
 \section{Timers}
 
-
+Timers is realized through the sleep tree in the scheduler. Invoking a timer on a process is done through the API call \texttt{SLEEP}, which takes an expiration time in microseconds as argument. If the expiration time is zero, the process yields with no additional changes. If non\hyp{}zero, the process registers the expiration time in the process struct, and adds itself to the sleep tree in the scheduler. Then, yielding with the state \textit{Sleep}. When the time expires, the scheduler will reschedule the sleeping process.
 
