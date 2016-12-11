@@ -431,11 +431,78 @@ Currently, the API calls \texttt{PROC}, \texttt{PAR} and \texttt{SEQ} allocates 
 
 Both API calls \texttt{GO} and \texttt{RUN} receives a root block, which the root flag of the block is set to true. \texttt{GO} traverses the resulting composite process tree, starting at the root block. When traversing returns, the API call returns as well, and the running process continues execution. \texttt{RUN} sets the root process pointer to the running process. Then, traverses the resulting composite process tree, starting at the root block. When traverses returns, the running process yields with the process state set to \textit{Wait}. The running process is resumed when the root block finishes.
 
-The traversal implementation is a very straightforward
+The traversal implementation is very straightforward, following the pseudocode in Listing \ref{lst:algo_composite_process_tree_traversal}. Only difference is process creation happens in the API call \texttt{PROC}, rather in the traversal procedure. This has to do with the simplifications of the variadic list handling. 
+
+The \texttt{PROC} ended implementation is follows the pseudocode in Listing \ref{lst:algo_composite_process_tree_proc_ended} with some slight modifications. The \texttt{RUN} and \texttt{GO} cases are removed, as they are simplified to a root flag. Whenever either \texttt{PROC}, \texttt{SEQ} or \texttt{PAR} block, a \texttt{block\_done} variable is set to true. This is checked at the end of the switch case, and if the current block is the root block, the root process is rescheduled if the composite tree is synchronous. 
+
+An added cleanup procedure must be called when the root block finishes, as the entire tree is allocated on the heap. This is a simple tree traversal, freeing up each block in a post\hyp{}order fashion. 
 
 \section{Channels}
 
+Channel implementation follows the design in \ref{sec:channels}, implementing a synchronous, unbuffered, size\hyp{}safe channels. However, disjointed channels proved to be to difficult to implement, which is why only any\hyp{}to\hyp{}any channels are used. This is explained more later. 
+
+Channels is realized by a channel struct and a channel end struct. A channel struct represents a created channel, while a channel end is used by a process waiting on a channel. The two struct are shown in Listing \ref{lst:channel_type_struct} and \ref{lst:channel_end_type_struct}.
+
+\noindent\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={Channel type struct},style={CustomC},label={lst:channel_type_struct}]
+typedef struct {
+    size_t data_size;
+    struct ChanEndQ endQ;
+    struct ChanEndQ altQ;
+} Chan;
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={Channel end type struct},style={CustomC},label={lst:channel_end_type_struct}]
+typedef struct {
+    enum {
+        CHAN_WRITER,
+        CHAN_READER,
+        CHAN_ALTER,
+    } type;
+    void *data;
+    Chan *chan;
+    Process *process;
+    AltGuard *guard;
+    TAILQ_ENTRY(ChanEnd) node;
+} ChanEnd;
+\end{lstlisting}
+\end{minipage}
+
+The channel constructor is called \texttt{chan\_create}, and takes the size of the data type as an argument. The channel struct is allocated on the heap. The data size is stored, and the two channel end queues are initialized. The API call \texttt{CHOPEN} calls the channel constructor and returns the channel struct pointer. 
+
+The channel destructor is called \texttt{chan\_free}, and frees the channel struct. The API call \texttt{CHCLOSE} calls the channel destructor.
+
+The channel struct contains two channel end queues, called hereafter end queue and altend queue. These queues are used when processes has to wait on a channel for a process to be available on the other end. Two queues are used instead of one, as alternation waiting is separated from normal waiting. The end queue can contain both writers and readers, but not at the same time. The altend queue only contains alternation processes trying to read the channel. 
+
+Three operations can be done on a channel struct: channel write, channel read and channel alternation read. All these three operations take a channel struct pointer, a data pointer, and the size of the data as arguments. As well are two additional internal operations for alternation, namely alternation enabling and disabling of a channel. 
+
+A channel read does the following: the channel end queue of the channel is checked. If the queue is non\hyp{}empty and contains writers, the first channel end is popped from the end queue. The data transfer is completed, and the writer process is rescheduled. The reading process resumes execution. If the end queue is empty or contains readers, a channel end struct is allocated on the stack and initialized. The channel end is inserted at the end of the end queue of the channel, and the reader process yields with the state \textit{Wait}. When the process is resumed, the channel operation is already completed.
+
+A channel write does the following: before the altend queue is checked before the end queue. If it contains an alternation process, the writer tries to accept the alternation event. If it is accepted, the data transfer is completed, and the alternation process is rescheduled. If this fails, the end queue is checked. If it is non\hyp{}empty and contains readers, the first channel end is popped from the end queue. The data transfer is completed, and the reader process is rescheduled. The writer process resumes execution. If the end queue is empty or contains writers, a channel end struct is allocated on the stack and initialized. The channel end is inserted at the end of the end queue of the channel, and the reader process yields with the state \textit{Wait}. When the process is resumed, the channel operation is already completed.
+
+A channel alternation read consists of multiple stages. First, the alternation process enables the channel for alternation synchronization. The end queue is checked, and if it contains writers, the channel is marked as available. If empty or contains readers, the alternation process is inserted in the altend queue. The case where the channel is available, the alternation process completes the data transfer with the channel alternation read operation. This pops the first writer from the end queue, the data transfer is completed, and the waiting writer process is rescheduled. Lastly, regardless if the alternation process or a writer process completed the channel operation, the alternation process disables the channel for alternation synchronization. This removes the channel end from the altend queue. 
+
+Transfer of data is optimized depending on the data size. If the data size is either 1, 2, 4, or 8 bytes, data is transferred as integer assignments. If data size is zero, nothing happens. Every other data size is transferred with a normal \texttt{memcpy} call. See Listing \ref{lst:channel_data_transfer} on how this is done.
+
+\begin{lstlisting}[caption={Channel data transfer},style={CustomC},label={lst:channel_data_transfer}]
+void channel_datatransfer(void *dst, void *src, size_t size) {
+    switch (size) {
+    case 0:    /* do nothing */                   break;
+    case 1:   *(uint8_t *)dst =  *(uint8_t *)src; break;
+    case 2:  *(uint16_t *)dst = *(uint16_t *)src; break;
+    case 4:  *(uint32_t *)dst = *(uint32_t *)src; break;
+    case 8:  *(uint64_t *)dst = *(uint64_t *)src; break;
+    default: memcpy(dst, src, size); break;
+    }
+}
+\end{lstlisting}
+
+This implementation only implements an any\hyp{}to\hyp{}any channel. Implementing one\hyp{}to\hyp{}one, any\hyp{}to\hyp{}one, or one\hyp{}to\hyp{}any channels proved to be too difficult. There was no possibility of enforcing this during compile\hyp{}time, as C lacks the language features for this. Run\hyp{}time checks was possible, but created too much overhead and was too error\hyp{}prone to be any useful. So for the sake of code simplicity, only implementing an any\hyp{}to\hyp{}any channel was favored. 
+
 \section{Alternation}
+
+
 
 \section{Timers}
 
