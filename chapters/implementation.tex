@@ -477,11 +477,11 @@ The channel struct contains two channel end queues, called hereafter end queue a
 
 Three operations can be done on a channel struct: channel write, channel read and channel alternation read. All these three operations take a channel struct pointer, a data pointer, and the size of the data as arguments. As well are two additional internal operations for alternation, namely alternation enabling and disabling of a channel. 
 
-A channel read does the following: the channel end queue of the channel is checked. If the queue is non\hyp{}empty and contains writers, the first channel end is popped from the end queue. The data transfer is completed, and the writer process is rescheduled. The reading process resumes execution. If the end queue is empty or contains readers, a channel end struct is allocated on the stack and initialized. The channel end is inserted at the end of the end queue of the channel, and the reader process yields with the state \textit{Wait}. When the process is resumed, the channel operation is already completed.
+A channel read does the following: the channel end queue of the channel is checked. If the queue is non\hyp{}empty and contains writers, the first channel end is popped from the end queue. The data transfer is completed, and the writer process is rescheduled. The reading process resumes execution. If the end queue is empty or contains readers, a channel end struct is allocated on the stack and initialized. The channel end is inserted at the end of the end queue of the channel, and the reader process yields with the state \textit{Wait}. When the process is resumed, the channel operation is already completed. The API call \texttt{CHREAD} calls the channel read operation, and returns whether the write was successful or not. 
 
-A channel write does the following: before the altend queue is checked before the end queue. If it contains an alternation process, the writer tries to accept the alternation event. If it is accepted, the data transfer is completed, and the alternation process is rescheduled. If this fails, the end queue is checked. If it is non\hyp{}empty and contains readers, the first channel end is popped from the end queue. The data transfer is completed, and the reader process is rescheduled. The writer process resumes execution. If the end queue is empty or contains writers, a channel end struct is allocated on the stack and initialized. The channel end is inserted at the end of the end queue of the channel, and the reader process yields with the state \textit{Wait}. When the process is resumed, the channel operation is already completed.
+A channel write does the following: before the altend queue is checked before the end queue. If it contains an alternation process, the writer tries to accept the alternation event. If it is accepted, the data transfer is completed, and the alternation process is rescheduled. If this fails, the end queue is checked. If it is non\hyp{}empty and contains readers, the first channel end is popped from the end queue. The data transfer is completed, and the reader process is rescheduled. The writer process resumes execution. If the end queue is empty or contains writers, a channel end struct is allocated on the stack and initialized. The channel end is inserted at the end of the end queue of the channel, and the reader process yields with the state \textit{Wait}. When the process is resumed, the channel operation is already completed. The API call \texttt{CHWRITE} calls the channel write operation, and returns whether the write was successful or not. 
 
-A channel alternation read consists of multiple stages. First, the alternation process enables the channel for alternation synchronization. The end queue is checked, and if it contains writers, the channel is marked as available. If empty or contains readers, the alternation process is inserted in the altend queue. The case where the channel is available, the alternation process completes the data transfer with the channel alternation read operation. This pops the first writer from the end queue, the data transfer is completed, and the waiting writer process is rescheduled. Lastly, regardless if the alternation process or a writer process completed the channel operation, the alternation process disables the channel for alternation synchronization. This removes the channel end from the altend queue. 
+A channel alternation read consists of multiple stages. First, the alternation process enables the channel for alternation synchronization. The end queue is checked, and if it contains writers, the channel is marked as available. If empty or contains readers, the alternation process is inserted in the altend queue. The case where the channel is available, the alternation process completes the data transfer with the channel alternation read operation. This pops the first writer from the end queue, the data transfer is completed, and the waiting writer process is rescheduled. Lastly, regardless if the alternation process or a writer process completed the channel operation, the alternation process disables the channel for alternation synchronization. This removes the channel end from the altend queue. The channel alternation read operation is done internally by the run\hyp{}time system.
 
 Transfer of data is optimized depending on the data size. If the data size is either 1, 2, 4, or 8 bytes, data is transferred as integer assignments. If data size is zero, nothing happens. Every other data size is transferred with a normal \texttt{memcpy} call. See Listing \ref{lst:channel_data_transfer} on how this is done.
 
@@ -502,12 +502,70 @@ This implementation only implements an any\hyp{}to\hyp{}any channel. Implementin
 
 \section{Alternation}
 
+Alternation is realized by an alternation struct for the alternation process, and a guard struct for each guarded event. Listing \ref{lst:alt_type_struct} and \ref{lst:guard_type_struct} shows the struct definition for the alternation type and guard type, respectively. 
 
+The alternation constructor is called \texttt{alternation\_init}, and takes a pre\hyp{}allocated alternation struct as argument. The alternation struct is allocated on the stack. The constructor initializes the struct members, guard queue and saves the running process pointer. This is used to reschedule the alternation process if it suspends itself waiting. 
+
+The alternation destructor is called \texttt{alternation\_cleanup}, and takes an alternation struct as argument. It iterates over the guard queue, calling the guard destructor for each guard. The available guard array is freed as well, as it is allocated on the heap. 
+
+\noindent\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={Alternation type struct},style={CustomC},label={lst:alt_type_struct}]
+typedef struct {
+    int key_count;
+    int is_accepted;
+    Guard *winner;
+    struct {
+        int num;
+        Guard **guards;
+    } ready;
+    struct {
+        size_t num;
+        struct GuardQ Q;
+    } guards;
+    // skip and time guards 
+    // only exists one of
+    Guard *guard_skip; 
+    Guard *guard_time;
+    // alternation process
+    Process *process;
+} Alternation;
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.45\textwidth}
+\begin{lstlisting}[caption={Guard type struct},style={CustomC},label={lst:guard_type_struct}]
+typedef struct {
+    enum {
+        GUARD_SKIP,
+        GUARD_TIME,
+        GUARD_CHAN
+    } type;
+    int key;
+    Alternation *alternation;
+    TAILQ_ENTRY(Guard) Qnode;
+    RB_ENTRY(Guard) RBnode;
+    // Timer Guard
+    uint64_t  usec;
+    // Chan Guard
+    Chan *chan;
+    ChanEnd ch_end;
+    struct {
+        void *ptr;
+        size_t size;
+    } data;
+    int in_chan;
+} Guard;
+\end{lstlisting}
+\end{minipage}
+
+The guard constructor is called \texttt{alternation\_guardcreate}, and is used for all of the three types of guards. The guard struct is allocated on the heap. It takes a guard type, expiration time in microseconds, channel struct pointer, data pointer, and the size of the data. The API call \texttt{CHAN\_GUARD} calls the constructor with the \texttt{GUARD\_CHAN} type and the channel related arguments. Note that the channel end struct is allocated alongside the guard struct. The API call \texttt{TIME\_GUARD} calls the constructor with the \texttt{GUARD\_TIME} type and the expiration time. Lastly, the API call \texttt{SKIP\_GUARD} calls the constructor with only the \texttt{GUARD\_SKIP} type. 
+
+The guard destructor is called \texttt{alternation\_guardfree}, and frees the guard struct.
+
+The alternation process stages follows the design in Section \ref{subsec:alternation_process_stages}. It starts with defining different guards with the following API calls \texttt{SKIP\_GUARD}, \texttt{TIME\_GUARD} and \texttt{CHAN\_GUARD}. Each call evaluates the boolean condition supplied as argument. If true, calls the corresponding guard constructor and returns the guard struct pointer. If false, a \texttt{NULL} pointer is returned. 
+
+The list of guards is stored as a variadic lsit and sent to as arguments to the API call \texttt{ALT}. The alternation struct is allocated on the stack, and initialized with the alternation constructor. Then, the variadic list is iterated over, adding each guard to the alternation struct. A \texttt{NULL} pointer guard is skipped, but the key value is incremented regardless. After evaluating and adding each guard, the selection procedure is called. Following the event selection algorithm in Section \ref{subsec:event_selection}, some slight additions are used. The available guards array is allocated as an guard struct pointer array, equal to the number of enabled guards. This is dynamically allocated on the heap. The chosen guard is stored in the \texttt{winner} member in the alternation struct. For the uniform pseduo\hyp{}random function, the library function \texttt{rand} is used.
 
 \section{Timers}
-
-
-
 
 
 

@@ -382,6 +382,7 @@ case 2: // Code for Guard 2
 \end{lstlisting}
 
 \subsection{Alternation Process Stages}
+\label{subsec:alternation_process_stages}
 
 The alternation process consists of three stages: activation, selection, and deactivation. It has one set of available events, initialized to empty. Key is initialized to 0.
 
@@ -441,7 +442,7 @@ An event is initially deactivated. During the alternation process, if the condit
 An event which is not available when activated has the added responsibility of resuming the alternation process when becoming available. It should only resume the alternation process if it is still suspended, as multiple events might become available before the alternation resumes execution.
 
 \subsection{Event Selection}
-\label{subsec:alternation_fairness}
+\label{subsec:event_selection}
 
 During the selection stage the set of available events are populated with one or more members. The following algorithm chooses an event from that set:
 
@@ -456,6 +457,7 @@ During the selection stage the set of available events are populated with one or
 If the selected event is a channel read, the data transfer completes and both processes on each end resumes. If the selected event is a timeout or skip, no additional actions are made and the alternation process continues. 
 
 \subsection{Fairness and Determinism}
+\label{subsec:alternation_fairness}
 
 The use of a pseudo\hyp{}random choice of multiple available events makes it fair and non\hyp{}deterministic. The reasoning for this policy being fair is subtle. If it was not fair, starvation would occur when arbitrating between multiple available events. This is however only possible within finite amount of time, as the arbitration is uniform pseudo\hyp{}random. Eventually, all events will be chosen. This is the same design and reasoning the Go programming language uses \citep[see][Select statements]{golangspec}.
 
