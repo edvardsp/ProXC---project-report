@@ -6,9 +6,149 @@
 \chapter{Performance}
 \label{ch:performance}
 
+This chapter will try to quantify the performance of ProXC by comparing ProXC programs to equal implementations in occam and Go. For compiling ProXC, occam and Go programs, GCC, the SPoC compiler and the official Go compiler gc will be used, respectively. The native 64\hyp{}bit version of GCC and gc is used, but SPoC was compiled for 32\hyp{}byte as it does not support 64\hyp{}bit. 
 
-\section{Present what to benchmark}
-\section{What benchmark setup is used}
-\section{Benchmark tests}
-\section{Analysis}
+These benchmarks should not be taken as the def\hyp{}facto metric of usefulness for the library. Rather, it should be an indication on how to perform against other implementations. What really should matter is the library's ability to provide a good CSP abstraction. Either way for completeness sake, benchmarking is provided. 
+
+All code for the different benchmark tests can be found in Appendix \ref{ch:benchmark_code}. 
+
+\section{Benchmark Setup}
+
+All benchmarks used in this chapter is done on the same machine; an HP\textregistered{} Folio 13 Notebook PC with an Intel\textregistered{} Core\texttrademark{} i5-2467M 1.60GHz processor, 4GiB DDR3 RAM, running Ubuntu GNOME 3.18.5 Linux\textregistered{} 64-bit as operating system.
+
+HP Folio is a registered trademark of Hewlett\hyp{}Packard Development Company, Intel Core is a registered trademark of Intel Corporation, Linux is the registered trademark of Linus Torvalds in the U.S. and other countries, Ubuntu is a registered trademark of Canonical Ltd.
+
+\section{Benchmark Tests}
+
+The benchmarks aim to quantify performance regarding context switches, channel operations, and some general concurrency based data\hyp{}intensive computing. Each benchmark timing is presented in real\hyp{}time, and is the average result of 1000 runs. Hopefully, any timing related interruptions that could affect the results will be averaged out. 
+
+ProXC and SPoC are single\hyp{}core implementations. To make the results comparable, Go was restricted to one core with \texttt{runtime.GOMAXPROCS(1)}.
+
+\subsection*{Context Switch Test}
+
+Benchmarking context switching times can be very difficult to get an accurate measure, so a more rough approach is used to get a more ballpark figure on the context switch times. This test is based on the test done in \citet{rainvm}.
+
+The benchmark tests one\hyp{}or\hyp{}more for\hyp{}loops iterating 1 million times. First, the raw instruction speed of the for\hyp{}loop is timed. A single process is spawned running the for\hyp{}loop, and timing the execution time. 
+
+\begin{lstlisting}[style={CustomC},frame={},numbers={none}]
+for (uint64_t i = 0; i < 1000000; ++i) { /* no-op */ }
+\end{lstlisting}
+
+The results for each language is shown in Table \ref{tab:instruction_speed_results}.
+
+\begin{table}[h!]
+    \centering
+    \label{tab:instruction_speed_results}
+    \begin{tabular}{l|r}
+            \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
+        &   \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}Time per loop iteration\\ (nanoseconds)\end{tabular}} \\ \hline
+        occam / SPoC 1.50  & 3 \\ 
+        Go / gc 1.6.2      & 1 \\ 
+        ProXC / GCC 5.4.0  & 1 \\ 
+    \end{tabular}
+    \caption{Instruction speed results}
+\end{table}
+
+To no surprise, ProXC gets a running time of 1 nanosecond for each loop iteration. An empty for\hyp{}loop in C is to no match. Interestingly, Go matches this speed with no problem, still with the added run\hyp{}time overhead. SPoC should have matched ProXC, as it generates standard C code.
+
+Next is to test with the same for\hyp{}loop, which yields each iteration instead a no\hyp{}op. 
+
+\begin{lstlisting}[style={CustomC},frame={},numbers={none}]
+for (uint64_t i = 0; i < 1000000; ++i) { yield(); }
+\end{lstlisting}
+
+Now, $x = 2$ and $x = 10$ number of processes are executed in parallel. The results for each $x$ is shown in Table \ref{tab:context_switch_results} 
+
+\begin{table}[h!]
+    \centering
+    \label{tab:context_switch_results}
+    \begin{tabular}{l|r|r}
+            \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
+        &   \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Time per loop iteration\\ $x = 2$ (nanoseconds)\end{tabular}} 
+        &   \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}Time per loop iteration\\ $x = 10$ (nanoseconds)\end{tabular}} \\ \hline
+        occam / SPoC 1.50  & 150 &  638 \\
+        Go / gc 1.6.2      & 329 & 1639 \\
+        ProXC / GCC 5.4.0  & 130 &  664 \\
+    \end{tabular}
+    \caption{Context switch results}
+\end{table}
+
+The time results in Table \ref{tab:context_switch_results} is the time for a loop iteration for all $x$ processes. In other words, the time result is calculated by $t/10^6$, not $t/(x\times10^6)$. For a more intuitive representation of the time results, a ratio comparisons between the languages themselves are shown in Table \ref{tab:running_time_ratios}. The first column is the ratio between the sequential time in Table \ref{tab:instruction_speed_results} and $x=2$, and the second column is the ratio between $x = 10$ and $x = 2$, to 2 decimal points. If the languages had an ideal system with no overhead, the ratios would be $2:1$ and $5:1$ respectively.
+
+\begin{table}[h!]
+    \centering
+    \label{tab:running_time_ratios}
+    \begin{tabular}{l|r|r}
+            \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
+        &   \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}$(x = 2)/$Sequential\\ Ratio, 2 d.p.\end{tabular}} 
+        &   \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}$(x = 10)/(x = 2)$\\ Ratio, 2 d.p.\end{tabular}} \\ \hline
+        occam / SPoC 1.50  &  50.00 & 4.25 \\ 
+        Go / gc 1.6.2      & 329.00 & 4.98 \\ 
+        ProXC / GCC 5.4.0  & 130.00 & 5.10 \\ 
+    \end{tabular}
+    \caption{Running time ratios}
+\end{table}
+
+What the results show in Table \ref{tab:running_time_ratios} is the significance of introducing context switching does to the sequential code. For ProXC, this was $65$ times increased running time than what was ideal. However, both Go and SPoC does not run ideally either, both getting an increased running time of $165$ and $25$ times more than ideal. Despite this, all languages has a linear increase in running times, when it comes to concurrent systems. ProXC does however have a unusual ratio of $5.10$, meaning a better increase in running time than ideal. Reasons for this might be the operating system helping with caching memory allocations for stack use. 
+
+Some naive calculations is used to get a rough estimate of context switch times. The results for $x = 2$ in Table \ref{tab:context_switch_results}, divded by 2, is subtracted by the sequential results in Table \ref{tab:instruction_speed_results}. This yields the results in Table \ref{tab:context_switch_time_estimate}.
+
+\begin{table}[h!]
+    \centering
+    \label{tab:context_switch_time_estimate}
+    \begin{tabular}{l|r}
+            \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
+        &   \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}Rough estimate\\ context switch time\\ (nanoseconds)\end{tabular}} \\ \hline
+        occam / SPoC 1.50  &  72 \\ 
+        Go / gc 1.6.2      & 164 \\ 
+        ProXC / GCC 5.4.0  &  64 \\ 
+    \end{tabular}
+    \caption{Context switch time estimate}
+\end{table}
+
+This shows that ProXC manages to context switch faster than both SPoC and Go, which is promising results!
+
+\subsection*{Commstime Test}
+
+The commstime test is a pseudo\hyp{}standard benchmark for testing concurrent channel communication in a concurrent system \citep{commstime}. Three processes, \texttt{prefix}, \texttt{delta} and \texttt{successor}, connected in a loop by channels, produces all natural numbers by sending a variable through the loop, incrementing each iteration. A fourth process, \texttt{consumer}, consumes a number for each iteration in the loop. For each run, the time results are the average time over 1 million numbers consumed, with a warmup run of 1000 iterations. 
+
+\begin{table}[h!]
+    \centering
+    \label{tab:commstime_results}
+    \begin{tabular}{l|r}
+            \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
+        &   \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}Time per commstime \\ loop iteration (nanoseconds)\end{tabular}} \\ \hline
+        occam / SPoC 1.50 &  231 \\ 
+        Go / gc 1.6.2     & 1585 \\ 
+        ProXC / GCC 5.4.0 &  451 \\ 
+    \end{tabular}
+    \caption{Commstime results}
+\end{table}
+
+occam/SPoC and ProXC outclasses GO in this test. Seems like there is a bigger overhead around channel communication in Go than in occam/SPoC and ProXC. ProXC shows it can handle communication heavy systems.
+
+\subsection*{Concurrent Prime Sieve}
+
+lastly, a more diverse benchmark is the concurrent prime sieve. This was popularized as an elegant piece of concurrent code in Go \citep{goconcurrentprime}. The equivalent code is implemented in occam and ProXC.
+
+The sieve is set to calculate the 4000th prime, which runs 500 times. The resulting time is the average over all runs to calculate each prime, in other words the average of the calculated $t/(4000)$. 
+
+This type of test tries to measure more generalized performance regarding many more processes, channel operations and concurrency system overhead.
+
+Table \ref{tab:concurrent_prime_sieve} shows the results.
+
+\begin{table}[h!]
+    \centering
+    \label{tab:concurrent_prime_sieve}
+    \begin{tabular}{l|r}
+            \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
+        &   \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}Time per prime \\ (microseconds)\end{tabular}} \\ \hline
+        occam / SPoC 1.50 &  153 \\ 
+        Go / gc 1.6.2     & 1068 \\ 
+        ProXC / GCC 5.4.0 &  633 \\ 
+    \end{tabular}
+    \caption{Concurrent prime sieve results}
+\end{table}
+
+SPoC comes out as the winner from this test, having a almost 5 times faster running time per prime than ProXC. This could be mostly because of ProXC using stackfull coroutines, while SPoC only simulates coroutines, which preallocates all needed memory at program startup. Go uses around 1 millisecond per prime, which probably is the added overhead of the virtual machine and garbage collector.
 
