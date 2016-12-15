@@ -6,11 +6,40 @@
 \chapter{Future Work}
 \label{ch:future_work}
 
-
+Some optional features that was planned for the library was not implemented because time proved too short. In this chapter these features are discussed, and how the library can benefit from this. 
 
 \section{Multicore support}
-\section{More complex scheduler policy}
+
+The most prominent feature that could provide great increase in performance and flexibility would be multi\hyp{}core support. As \citet{c++csp2} argues, taking advantage of the potential parallelism in multicore is the future of concurrency programming.
+
+Multi\hyp{}core support was planned for at the start of this project. But, as a result of the overwhelming amount of work, a single\hyp{}core implementation was first planned to make the foundation of the library. Later, when the foundation was set, the plan was to expand the to multi\hyp{}core support. However, when the single\hyp{}core implementation was finished, there was not enouhg time left for the multi\hyp{}core support to be implemented.
+
+The design for the multi\hyp{}core support was however made. In short terms, the library spawns a kernel\hyp{}thread for each online processor core. Each core runs its own scheduler, with its own set of processes to schedule. Spawned processes are distributed through distributed work stealing among schedulers. All access by the scheduler and run\hyp{}time system to structures that is subjected to race conditions is guarded by atomic constructs. The multi\hyp{}core algorithms for the channel and alternation constructs is a modified version of those described in \citet{c++csp2}.
+
+\section{IO and Blocking Calls}
+
+Interfacing blocking calls, such as IO operations or system calls, will cause the entire kernel\hyp{}thread to block. It is possible to mitigate this by detach the blocking user\hyp{}thread to its own kernel\hyp{}thread, and continue operating on the other kernel\hyp{}thread. When the blocking user\hyp{}thread resumes, it is added back to the scheduler.
+
+Implementing should be trivial to some degree, as this involves adding extra logic for detaching and attaching user\hyp{}threads to schedulers. However, further testing is required to test for correctness.
+
 \section{Replicators}
-\section{Optimizations}
-\section{IO and block computation}
+
+Replicators is used in occam and XC to specify ranges of components for both \texttt{SEQ}, \texttt{PAR} and \texttt{ALT} constructs. This allows the programmer to specify finite ranges of processes in composite processes, and ranges of alternatives in alternation constructs. 
+
+\begin{lstlisting}[style={CustomC},frame={},numbers={none}]
+SEQ i = 0 FOR n
+PAR i = 0 FOR n
+ALT i = 0 FOR n
+\end{lstlisting}
+
+This is a very expressive and powerful semantic, which is very useful for reusing code. Note that a replicator behaves like a for\hyp{}loop, specifying a range which the composite process or alternation ranges over to generate each process or alternative. 
+
+ProXC does not support replicators, but there is in my opinion no reason not to. Implementing replicators should not be very difficult. An appropriate API must be designed, and further implement the logic where the run\hyp{}time system iteratively generates the processes and alternatives.
+
+\section{More Complex Scheduler Policy}
+
+Currently, a simple FIFO queue is used as the scheduler policy for ready processes. For this simple framework, this policy is good enough. However, if in the future more complex features such as replicators, multi\hyp{}core support, block calls and etc. is implemented, a more complex scheduler policy might be necessary. 
+
+Another factor is how deterministic do we want the library to be. As of now, determinism is not the main focus. But if this changes, again this might need a more complex scheduler policy. 
+
 

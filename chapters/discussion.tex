@@ -61,5 +61,9 @@ The run\hyp{}time system allocates a considerable amount of memory on the heap. 
 
 Static declarations of composite processes, alternation constructs and channels may be statically defined and allocated by the run\hyp{}time system during compilation. This could however require some use of macro magic and leaking of implementation details, and mostly relies on techniques exploiting the limitations of the C programming language.
 
+Suspended processes, either by sleeping or alternation sleeping, is currently implemented as a manual check by the scheduler each iteration. This is unnecessary use of resources. A better implementation would be to incorporate POSIX timers, which would asynchronously signal the scheduler when a process has expired.
+
+Some data structures used in this implementation proved to later be redundant. For instance, as a result of the FIFO scheduler policy, a simple linked list would be sufficient compared to a double ended queue. 
+
 Lastly, writing the run\hyp{}time system in C is not obligatory. If this were to be redone, I would probably write it in a more type and memory\hyp{}safe language, such as C++ or Rust, and create API bindings for C programs. 
 
