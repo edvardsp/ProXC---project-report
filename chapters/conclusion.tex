@@ -6,5 +6,20 @@
 \chapter{Conclusion}
 \label{ch:conclusion}
 
+% proxc
+ProXC is a concurrency library for C. It allows programmers to use Communicating Sequential Processes (CSP) abstractions in their code, equivalent to that of occam and XC. This enables programmers to write concurrent code in C with the safety and expressiveness of CSP, either by wrapping existing code with this library, or using this library from scratch.
 
+% this paper
+This paper has assessed the different approaches for creating a CSP abstraction framework for C, which concluded in writing a library. This library was named ProXC. The full feature list for ProXC was decided, and from there, a design and API was created. Based on the design, an single\hyp{}core implementation was detailed, which was written in C. Example of usage was presented, and a few benchmarks was conducted to compare the framework to other existing languages. The presented benchmarks showed great potential for concurrent throughput. 
+
+% this work
+This work should prove helpful for how to create the foundation of other CSP implementations. The details regarding user\hyp{}thread implementation could in itself be very helpful for other coroutine implementations. 
+
+% future work
+Not all planned features made it into the library, mostly because of time shortage. The most prominent feature not implemented was multi\hyp{}core support. This was a sought after feature for taking advantage of the ever increasing parallelism in multi\hyp{}core architectures. Other concurrent constructs such as barriers and mobiles could be advantageous for ProXC. Lastly, more support for native context switching on other architectures should be favorable.
+
+\subsection*{Availability}
+\label{subsec:availability}
+
+Source code for ProXC is available at GitHub \citep{proxc_github}, with an open\hyp{}source MIT license. Any inquires about code or questions in general can reach the author by mail \texttt{edvard.pettersen@gmail.com}.
 

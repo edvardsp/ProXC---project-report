@@ -211,7 +211,7 @@ void process(void) {
 
 Lastly, the alternation process supports skip events, created with a \texttt{SKIP\_GUARD}. This allows the alternation process to select the skip event, if no other events are already available at initialization. 
 
-\begin{lstlisting}[style={CustomC},caption={Alternation construct with timeout}]
+\begin{lstlisting}[style={CustomC},caption={Alternation construct with skip}]
 void process(void) {
     // ...
     switch (ALT(

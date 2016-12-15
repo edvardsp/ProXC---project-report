@@ -9,19 +9,30 @@
 \section*{Project Description}
 \label{sec:project_description}
 
-FIXME
+Create an abstraction of Communicating Sequential Processes (CSP) for C programs. This abstraction should be influenced by the CSP\hyp{}based languages occam, XC and Go. Discuss limitations and uses. 
 
-So based on the motivation above, the project description is as follows:
+The following features and constructs should be available in this abstraction:
 
-Create a development tool for C, which enables the use of CSP constructs and paradigms in normal C code. To fully utilize the potential of CSP and the inevitable increase in multicore computers, the tool should support multicore. The tool should be aimed towards development on desktop computers, which in turn excludes embedded systems. The tool should contain the following CSP constructs:
-
-\begin{enumerate}
-    \item Concurrent processes
+\begin{itemize}[leftmargin=*,topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item Lightweight processes
+    \item Composite processes, including sequential and parallel process ordering
     \item Channels
-    \item Alternation structure for event handling
-    \item Conditional guards for alternation
-    \item Ability to express evaluations of sequential and parallel expressions
+    \item Alternation structure with conditional guards
+    \item Alternation alternatives, including channel reads
+\end{itemize}
+
+A list of optional features if time and possibility allows it:
+
+\begin{itemize}[leftmargin=*,topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item Multi\hyp{}core support
     \item Timers
-\end{enumerate}
+    \item Alternation alternatives, including timeouts and skip
+\end{itemize}
+
+\begin{flushleft}
+Assignment given: 26. August, 2016\\
+Supervisor: Sverre Hendseth, ITK
+\end{flushleft}
+
 
 \afterpage{\blankpage}
