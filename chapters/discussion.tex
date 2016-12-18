@@ -6,13 +6,13 @@
 \chapter{Discussion}
 \label{ch:discussion}
 
-This chapter discusses the practical abilities ProXC achieves, what limitations the current implementation faces, and what could have been implemented if given enough time. Changes in design and implementation which became apparent too late in the project is also taken up for discussion. 
+This chapter discusses the how the abstractions ProXC delivers compares to the CSP model, and what limitations the current implementation faces. Changes in design and implementation which became apparent too late in the project is also taken up for discussion. 
 
 \section{Adaptation of CSP Abstractions}
 
-The conceptual driving force of ProXC is to abstract C programs into the CSP paradigm. There are multiple ways to accomplish this, and none of them are the de\hyp{}facto answer. In order to ``\textit{measure}'' how successful ProXC is, is to see how correct and useful the abstractions ProXC provides are compared to the CSP model. 
+The conceptual driving force of ProXC is to abstract C programs into the CSP paradigm. There are multiple ways to accomplish this, and none of them are the de\hyp{}facto answer. In order to ``measure'' how successful ProXC is, is to see how correct and useful the abstractions ProXC provides are compared to the CSP model. 
 
-At the core of the library, ProXC consists of lightweight process which communicate with message passing via channels, complex and expressive process spawning and execution with composite processes, and allowing processes to arbitrate on multiple channel reads at the same time. 
+At the core of the library, ProXC consists of lightweight process which communicate with message passing via channels. Complex and expressive process spawning and execution is expressed with composite processes, and processes can arbitrate on multiple channel reads at the same time with alternation constructs. 
 
 How correct CSP programs can you get with these features? The abstractions ProXC provides allows the programmer to structure code into independent processes. These independent processes, if enforced by the programmer, can only communicate through channels. This in itself is the core of CSP paradigm. 
 
@@ -20,13 +20,13 @@ Process parallelism is realized through composite processes, which is fully insp
 
 The alternation structure compares to the deterministic choice on multiple channel reads. Guarded alternatives allows the alternative to be enabled or disabled, limiting the deter\-mi\-nistic choice depending on internal states. The skip alternative is always available for the deter\-mi\-nistic choice, while the timeout alternative becomes available after a given expiration time. This, of course, presumes they are enabled. 
 
-Suspension of processes, which are the equivalent of sleeping in ProXC, is not necessarily a direct CSP construct, as the original CSP model ignores time. However, process suspension can be useful in use cases where timing requirements are needed.
+Suspension of processes, which is the equivalent of sleeping in ProXC, is not necessarily a direct CSP construct, as the original CSP model ignores time. However, process suspension can be useful in use cases where timing requirements are needed.
 
 ProXC does not however support abstractions such as pipes, subordinate processes, or sha\-red processes. Despite this, the already supported abstractions in ProXC serves as a sufficiently powerful tool kit for creating CPS abstractions in C programs. Seeing that the core abstractions is present in occam and that occam is a well renowned abstraction of CSP, ProXC should in its initial state be more than capable of doing the same job. 
 
-\section{Shortcomings}
+\section{Shortcomings and Limitations}
 
-When it comes to correct usage and functionality, it gives the necessary tools to express CSP paradigm in C programs. However, it is not perfect. Some considerable shortcomings is discussed in this section. 
+When it comes to correct usage and functionality, ProXC gives the necessary tools to express CSP abstractions in C programs. However, it is not perfect. Some considerable shortcomings and limitations are discussed in this section.
 
 \subsection{Enforcing Incorrect Usage}
 
@@ -34,34 +34,34 @@ ProXC provides a framework for CSP abstractions, which allows a programmer to wr
 
 \subsection{Fixed Stack}
 
-All processes, as a coroutine, has each an individual stack. This stack is currently fixed size at 8 KiB. This means if a coroutine overflows the stack invokes undefined behaviour, and in best case segmentation faults the program. This consequently discourages large stack allocations and recursive function calls in processes.
+Each process, as a coroutine, has an individual stack. This stack currently has a fixed size at 8 KiB. Stack overflows is entirely possible with such a small stack size. Causing a stack overflow is undefined behaviour, and in best case segmentation faults the program. This consequently discourages large stack allocations and recursive function calls in processes.
 
 A variable sized stack took too much time to implement, so a fixed stack size was favored for simplicity. A more advanced variable sized stack could potentially be implemented in the future. 
 
 \subsection{Simple Scheduler Policy}
 
-As of now, the scheduler policy for ready processes is a straightforward FIFO queue. Since ProXC does not deal with deadlines and no considerations are taken for blocking calls and multi\hyp{}core support, a simple FIFO queue policy sufficient. This could be an area of improvement if the simple FIFO queue proves to be inadequate for better deterministic running times of processes. 
+As of now, the scheduler policy for ready processes is a straightforward FIFO queue. Since ProXC does not deal with deadlines and no considerations are taken for blocking calls and multi\hyp{}core support, a simple FIFO queue policy is sufficient. This could be an area of improvement if the simple FIFO queue proves to be inadequate for better deterministic running times of processes. 
 
 \subsection{Portability}
 \label{sec:portability}
 
-One major weakness of the current implementation of ProXC is how context switching between coroutines is implemented. As it is implemented with handwritten assembly, inherently makes ProXC not portable for architectures where the context switching is not written for. As of writing this, context switching for i386 and x86\_64 architectures (32/64\hyp{}bit) is implemented.
+One major weakness of the current implementation of ProXC is how context switching between coroutines is implemented. Since it is implemented in handwritten assembly, makes ProXC naturaly not portable for architectures where the context switching is not written for. As of writing this, context switching for i386 and x86\_64 architectures (32/64\hyp{}bit) is implemented.
 
 The current solution for circumventing this portability issue is to use the \texttt{makecontext} \citep{manmakecontext} library for non\hyp{}implemented architectures, which is a portable context switching library for System V\hyp{}like environments. This library is however 3{\raise.17ex\hbox{$\scriptstyle\mathtt{\sim}$}}4 times slower than the handwritten solution, which is why this library is only used for portability reasons. 
 
-The ideal but most demanding solution is to implement the context switching for the other architectures. This in itself is a mini\hyp{}project.
+The ideal, but most demanding solution, is to implement the context switching for the other architectures. This in itself is a mini\hyp{}project.
 
 \section{Design and Implementation Improvements}
 
-Some design and implementation choices became apparent they were not ideal during the later stages in this project. In hindsight, if I were to undergo this project again, the different choices presented below would be done differently.
+Some design and implementation choices became apparent that they were not ideal during the later stages in this project. In hindsight, if I were to undergo this project again, the different choices presented below would be done differently.
 
-Composite processes does not necessarily need to be represented as a node tree. A more clever algorithm could work out the process dependency for the execution ordering. What this means is instead of creating a node tree, a direct linked list between execution ordering of processes could be made. This could be represented for each process as a pointer to the next processes to execute when the current one ends. This would reduce the amount of dynamic allocated memory, as each node member is allocated on the heap. 
+Composite processes do not necessarily need to be represented as a node tree. A more clever algorithm could work out the process dependency for the execution ordering. What this means is instead of creating a node tree, a direct linked list between execution ordering of processes could be made. This could be represented for each process as a pointer to the next processes to execute when the current one ends. This would reduce the amount of dynamic allocated memory, as each node member is allocated on the heap. 
 
-The run\hyp{}time system allocates a considerable amount of memory on the heap. Some of these allocations, such as the scheduler struct, composite process tree nodes for synchronous trees, and the alternation struct and the corresponding guards, could all be allocated on the stack, as these structs has a fixed lifetime. The scheduler struct would not affect the stack size, as it uses the kernel\hyp{}thread's stack. The alternation structs and its related allocations could however motivate for a larger default stack for the processes, as this would be directly allocated on their stack. This, among other things, could reduce the total amount of dynamic allocated memory footprint.
+The run\hyp{}time system allocates a considerable amount of memory on the heap. Some of these allocations, such as the scheduler struct, composite process tree nodes for synchronous trees, and the alternation struct and the corresponding guards, could all be allocated on the stack, as these structs have a fixed lifetime. The scheduler struct would not affect the stack size, as it uses the kernel\hyp{}thread's stack. The alternation structs and its related allocations could however motivate for a larger default stack for the processes, as this would be directly allocated on their stack. This, among other things, could reduce the total amount of dynamic allocated memory footprint.
 
 Static declarations of composite processes, alternation constructs and channels may be statically defined and allocated by the run\hyp{}time system during compilation. This could however require some use of macro magic and leaking of implementation details, and mostly relies on techniques exploiting the limitations of the C programming language.
 
-Suspended processes, either by sleeping or alternation sleeping, is currently implemented as a manual check by the scheduler each iteration. This is unnecessary use of resources. A better implementation would be to incorporate POSIX timers, which would asynchronously signal the scheduler when a process has expired.
+Suspended processes, either by sleeping or alternation sleeping, is currently implemented as a manual check by the scheduler each iteration. This creates unnecessary overhead for the scheduler. A better implementation would be to incorporate POSIX timers, which would asynchronously signal the scheduler when a process has expired.
 
 Some data structures used in this implementation proved to later be redundant. For instance, as a result of the FIFO scheduler policy, a simple linked list would be sufficient compared to a double ended queue. 
 

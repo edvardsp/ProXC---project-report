@@ -24,7 +24,9 @@ The benchmarks aim to quantify performance regarding context switches, channel o
 
 ProXC and SPoC are single\hyp{}core implementations. To make the results comparable, Go was restricted to one core with \texttt{runtime.GOMAXPROCS(1)}.
 
-\subsection*{Context Switch Test}
+\subsection{Context Switch Test}
+
+FIXME
 
 Benchmarking context switching times can be very difficult to get an accurate measure, so a more rough approach is used to get a more ballpark figure on the context switch times. This test is based on the test done in \citet{rainvm}.
 
@@ -49,9 +51,9 @@ The results for each language is shown in Table \ref{tab:instruction_speed_resul
     \caption{Instruction speed results}
 \end{table}
 
-To no surprise, ProXC gets a running time of 1 nanosecond for each loop iteration. An empty for\hyp{}loop in C is to no match. Interestingly, Go matches this speed with no problem, still with the added run\hyp{}time overhead. SPoC should have matched ProXC, as it generates standard C code.
+To no surprise, ProXC achieves a running time of 1 nanosecond for each loop iteration. An empty for\hyp{}loop in C is hard to outperform. Interestingly, Go matches this speed with no problem, still with the added run\hyp{}time overhead. SPoC should have matched ProXC, as it generates standard C code.
 
-Next is to test with the same for\hyp{}loop, which yields each iteration instead a no\hyp{}op. 
+Next is to context switching in each loop iteration instead a no\hyp{}op. 
 
 \begin{lstlisting}[style={CustomC},frame={},numbers={none}]
 for (uint64_t i = 0; i < 1000000; ++i) { yield(); }
@@ -73,7 +75,7 @@ Now, $x = 2$ and $x = 10$ number of processes are executed in parallel. The resu
     \caption{Context switch results}
 \end{table}
 
-The time results in Table \ref{tab:context_switch_results} is the time for a loop iteration for all $x$ processes. In other words, the time result is calculated by $t/10^6$, not $t/(x\times10^6)$. For a more intuitive representation of the time results, a ratio comparisons between the languages themselves are shown in Table \ref{tab:running_time_ratios}. The first column is the ratio between the sequential time in Table \ref{tab:instruction_speed_results} and $x=2$, and the second column is the ratio between $x = 10$ and $x = 2$, to 2 decimal points. If the languages had an ideal system with no overhead, the ratios would be $2:1$ and $5:1$ respectively.
+The benchmarking results in Table \ref{tab:context_switch_results} is the time for one loop iteration for all $x$ processes. In other words, the time result is calculated by $t/10^6$, not $t/(x\times10^6)$. For a more intuitive representation of the time results, a ratio comparisons between the languages themselves are shown in Table \ref{tab:running_time_ratios}. The first column is the ratio between the sequential time in Table \ref{tab:instruction_speed_results} and $x=2$, and the second column is the ratio between $x = 10$ and $x = 2$, to 2 decimal points. If the languages had an ideal system with no overhead, the ratios would be $2:1$ and $5:1$ respectively.
 
 \begin{table}[h!]
     \centering
@@ -108,9 +110,9 @@ Some naive calculations is used to get a rough estimate of context switch times.
 
 This shows that ProXC manages to context switch faster than both SPoC and Go, which is promising results!
 
-\subsection*{Commstime Test}
+\subsection{Commstime Test}
 
-The commstime test is a pseudo\hyp{}standard benchmark for testing concurrent channel communication in a concurrent system \citep{commstime}. Three processes, \texttt{prefix}, \texttt{delta} and \texttt{successor}, connected in a loop by channels, produces all natural numbers by sending a variable through the loop, incrementing each iteration. A fourth process, \texttt{consumer}, consumes a number for each iteration in the loop. For each run, the time results are the average time over 1 million numbers consumed, with a warmup run of 1000 iterations. 
+The commstime test is a pseudo\hyp{}standard benchmark for testing concurrent channel communication in a concurrent system \citep{commstime}. Three processes, \texttt{prefix}, \texttt{delta} and \texttt{successor}, are connected in a loop by channels and produces all natural numbers by sending a variable through the loop, incrementing each iteration. A fourth process, \texttt{consumer}, consumes a number for each iteration in the loop. For each run, the time results are the average time over 1 million numbers consumed, with a warmup run of 1000 iterations. 
 
 \begin{table}[h!]
     \centering
@@ -125,9 +127,9 @@ The commstime test is a pseudo\hyp{}standard benchmark for testing concurrent ch
     \caption{Commstime results}
 \end{table}
 
-occam/SPoC and ProXC outclasses GO in this test. Seems like there is a bigger overhead around channel communication in Go than in occam/SPoC and ProXC. ProXC shows it can handle communication heavy systems.
+occam/SPoC and ProXC outperforms Go in this test. It seems like there is a bigger overhead around channel communication in Go than in occam/SPoC and ProXC. ProXC shows it can handle communication\hyp{}heavy systems.
 
-\subsection*{Concurrent Prime Sieve}
+\subsection{Concurrent Prime Sieve}
 
 FIXME concurrent throughput/strain.
 
@@ -152,5 +154,5 @@ Table \ref{tab:concurrent_prime_sieve} shows the results.
     \caption{Concurrent prime sieve results}
 \end{table}
 
-SPoC comes out as the winner from this test, having a almost 5 times faster running time per prime than ProXC. This could be mostly because of ProXC using stackfull coroutines, while SPoC only simulates coroutines, which preallocates all needed memory at program startup. Go uses around 1 millisecond per prime, which probably is the added overhead of the virtual machine and garbage collector.
+SPoC comes out as the winner from this test, having an almost five times faster running time per prime than ProXC. This could mostly be a result of ProXC using stackfull coroutines, while SPoC only simulates coroutines, which preallocates all needed memory at program startup. Go uses around 1 millisecond per prime, which probably is the added overhead of the virtual machine and garbage collector.
 

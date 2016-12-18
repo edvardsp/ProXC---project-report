@@ -18,9 +18,9 @@ To use ProXC in a C program, include the header file \texttt{proxc.h} in your C\
 
 \noindent and during linking add the linker flag \texttt{-lproxc}. See Appendix \ref{ch:api_header} for the API header file \texttt{proxc.h}. From here on, ProXC can be used.
 
-\section*{Starting and exiting}
+\section*{Starting and Exiting}
 
-Everything starts with the \texttt{START} call. This usually called from \texttt{main} function. A function pointer is supplied with the \texttt{START} call, which will start as the main process in the ProXC. When the main process returns, ProXC will exit as well, and the \texttt{START} call in \texttt{main} will return.
+Everything starts with the \texttt{START} call. This is usually called from \texttt{main} function. A function pointer is supplied with the \texttt{START} call, which will start as the main process in the ProXC. When the main process returns, ProXC will exit as well, and the \texttt{START} call in \texttt{main} will return.
 
 \begin{lstlisting}[style={CustomC},caption={Hello World in ProXC}]
 void process(void) {
@@ -75,7 +75,7 @@ void process(void) {
 
 \section*{Yielding}
 
-Note that the process \texttt{never\_stop} in Listing \ref{lst:async_sync_execution} called \texttt{YIELD} in the infinite loop. \texttt{YIELD} is used to give back control to the run\hyp{}time system. ProXC relies on cooperative scheduling, and infinite loops without descheduling points will hang the library. This is why \texttt{never\_stop} calls \texttt{YIELD}, or only one of the messages would print. 
+Note that the process \texttt{never\_stop} in Listing \ref{lst:async_sync_execution} called \texttt{YIELD} in the infinite loop. \texttt{YIELD} is used to give back control to the run\hyp{}time system. ProXC relies on cooperative scheduling, and infinite loops without descheduling points will cause stop the library from regaining control. This is why \texttt{never\_stop} calls \texttt{YIELD}, or only one of the messages would print. 
 
 Yielding can also be used by a process to occasionally give back control if during a data\hyp{}intensive computing over a prolonged time. 
 
@@ -93,7 +93,7 @@ void process(void) {
 }
 \end{lstlisting}
 
-There is a equivalent call for parallel execution, \texttt{PAR}. Note that the code in Listing \ref{lst:parallel_composite_process_execution} will always print \textit{Chicken} first, every time. This has to do that ProXC is a single\hyp{}core implementation, which means \texttt{PAR} only simulates parallel execution. The order in which processes are defined in a parallel execution will affect which processes are executed first. 
+There is an equivalent call for parallel execution, \texttt{PAR}. Note that the code in Listing \ref{lst:parallel_composite_process_execution} will always print \textit{Chicken} first, every time. This has to do that ProXC is a single\hyp{}core implementation, which means \texttt{PAR} only simulates parallel execution. The order in which processes are defined in a parallel execution will affect which processes are executed first. 
 
 \begin{lstlisting}[style={CustomC},caption={Parallel composite process execution},label={lst:parallel_composite_process_execution}]
 void process(void) {

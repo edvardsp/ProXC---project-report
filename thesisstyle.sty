@@ -28,7 +28,7 @@
 
 \newenvironment{remark}{\par\mbox{}\par\noindent{\bfseries \emph{Remark}\/}:\normalfont}{\par}
 \newenvironment{defin}{\par\mbox{}\par\noindent\bfseries \emph{\Pointinghand\ }\normalfont}{\par}
-\setcounter{tocdepth}{1} 
+\setcounter{tocdepth}{2} 
 \usepackage[colorlinks=false, pdfstartview=FitV]{hyperref}
 \pdfcompresslevel=9
 
@@ -43,6 +43,75 @@
 \lstdefinestyle{CustomC}{
     tabsize=4,    
     language=C,
+    basicstyle=\footnotesize\ttfamily,
+    upquote=true,
+    aboveskip={1.5\baselineskip},
+    columns=fixed,
+    showstringspaces=false,
+    extendedchars=false,
+    escapechar=@,
+    breaklines=true,
+    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+    frame=tb,
+    aboveskip=1em,
+    belowskip=1em,
+    numbers=left,
+    showtabs=false,
+    showspaces=false,
+    showstringspaces=false,
+    identifierstyle=\ttfamily,
+    keywordstyle=\color{blue},
+    commentstyle=\color{yellow!30!black},
+    stringstyle=\color{green!40!black},
+    numberstyle=\color{black},
+    identifierstyle=\color{black},
+}
+\lstdefinestyle{CustomC++}{
+    tabsize=4,    
+    language=C++,
+    basicstyle=\footnotesize\ttfamily,
+    upquote=true,
+    aboveskip={1.5\baselineskip},
+    columns=fixed,
+    showstringspaces=false,
+    extendedchars=false,
+    escapechar=@,
+    breaklines=true,
+    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+    frame=tb,
+    aboveskip=1em,
+    belowskip=1em,
+    numbers=left,
+    showtabs=false,
+    showspaces=false,
+    showstringspaces=false,
+    identifierstyle=\ttfamily,
+    keywordstyle=\color{blue},
+    commentstyle=\color{yellow!30!black},
+    stringstyle=\color{green!40!black},
+    numberstyle=\color{black},
+    identifierstyle=\color{black},
+}
+\lstdefinelanguage{Golang}{
+    morekeywords=[1]{package,import,func,type,struct,return,defer,panic,%
+        recover,select,var,const,iota,go},%
+    morekeywords=[2]{string,uint,uint8,uint16,uint32,uint64,int,int8,int16,%
+        int32,int64,bool,float32,float64,complex64,complex128,byte,rune,uintptr,%
+        error,interface},%
+    morekeywords=[3]{map,slice,make,new,nil,len,cap,copy,close,true,false,%
+        delete,append,real,imag,complex,chan,},%
+    morekeywords=[4]{for,break,continue,range,goto,switch,case,fallthrough,if,%
+        else,default,},%
+    sensitive=true,%
+    morecomment=[l]{//},%
+    morecomment=[s]{/*}{*/},%
+    morestring=[b]',%
+    morestring=[b]",%
+    morestring=[s]{`}{`},%
+}
+\lstdefinestyle{Golang}{
+    tabsize=4,    
+    language=Golang,
     basicstyle=\footnotesize\ttfamily,
     upquote=true,
     aboveskip={1.5\baselineskip},

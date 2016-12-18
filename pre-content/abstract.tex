@@ -8,9 +8,9 @@
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
 
-This paper describes the design and implementation of ProXC, a CSP (Communicating Sequential Processes) inspired concurrency library for C. ProXC aims to enable C programs to use CSP abstractions, allowing a more safer and expressive design of concurrent systems. The choice of writing a library was the result of an evaluation, assessing which approach to create the CSP abstracted framework for C. 
+This paper describes the design and implementation of ProXC, a \textit{Communicating Sequential Processes} (CSP) inspired concurrency library for C. ProXC aims to enable C programs to use CSP abstractions, allowing a more expressive and safer design of concurrent systems. The choice of writing a library was the result of an evaluation, assessing which approach to create the CSP abstracted framework for C. 
 
-The CSP abstractions in ProXC is a collection of are lightweight processes, which communicate via channels. Composite processes can be defined, where the execution ordering and synchronous and asynchronous execution is supported. Alternation construct is also possible, allowing a process to wait on multiple channel reads, with or without a timeout or a skip-able alternative. Process suspension is also possible. 
+The CSP abstractions in ProXC are a collection of lightweight processes, which communicates via channels. Composite processes can be defined, where the execution ordering and synchronous and asynchronous execution is supported. Alternation construct is also possible, allowing a process to wait on multiple channel reads, with or without a timeout or a skip-able alternative. Process suspension is also possible. 
 
 ProXC is a single\hyp{}core implementation, which emulates concurrency by implementing stackful coroutines. Each process is a coroutine, with an underlying run\hyp{}time system taking care of scheduling, synchronization and resource handling between processes. 
 

@@ -35,17 +35,20 @@ Builder* proxc_seq(int, ...);
 int proxc_go(Builder *root);
 int proxc_run(Builder *root);
 
-Guard* proxc_guardchan(int cond, Chan* chan, void *out, size_t size);
-Guard* proxc_guardtime(int cond, uint64_t usec);
-Guard* proxc_guardskip(int cond);
-int    proxc_alt(int, ...);
-
 Chan* proxc_chopen(size_t size);
 void  proxc_chclose(Chan *chan);
 int   proxc_chwrite(Chan *chan, void *data, size_t size);
 int   proxc_chread(Chan *chan, void *data, size_t size);
 
+Guard* proxc_guardchan(int cond, Chan* chan, void *out, size_t size);
+Guard* proxc_guardtime(int cond, uint64_t usec);
+Guard* proxc_guardskip(int cond);
+int    proxc_alt(int, ...);
+
 #ifndef PROXC_NO_MACRO
+
+#   define START(fxn)  proxc_start(fxn)
+#   define EXIT()      proxc_exit()
 
 #   define ARGN(index)  proxc_argn(index)
 #   define YIELD()      proxc_yield()
@@ -62,6 +65,13 @@ int   proxc_chread(Chan *chan, void *data, size_t size);
 #   define GO(build)   proxc_go(build)
 #   define RUN(build)  proxc_run(build)
 
+#   define CHOPEN(type)   proxc_chopen(sizeof(type))
+#   define CHCLOSE(chan)  proxc_chclose(chan)
+#   define CHWRITE(chan, data, type)  
+                          proxc_chwrite(chan, data, sizeof(type))
+#   define CHREAD(chan, data, type)   
+                          proxc_chread(chan, data, sizeof(type)) 
+
 #   define CHAN_GUARD(cond, ch, out, type)  
                 proxc_guardchan(cond, ch, out, sizeof(type))
 #   define TIME_GUARD(cond, usec)           
@@ -69,13 +79,6 @@ int   proxc_chread(Chan *chan, void *data, size_t size);
 #   define SKIP_GUARD(cond)                 
                 proxc_guardskip(cond)
 #   define ALT(...)  proxc_alt(0, __VA_ARGS__, PROXC_NULL)
-
-#   define CHOPEN(type)   proxc_chopen(sizeof(type))
-#   define CHCLOSE(chan)  proxc_chclose(chan)
-#   define CHWRITE(chan, data, type)  
-                          proxc_chwrite(chan, data, sizeof(type))
-#   define CHREAD(chan, data, type)   
-                          proxc_chread(chan, data, sizeof(type)) 
 
 #endif /* PROXC_NO_MACRO */
 

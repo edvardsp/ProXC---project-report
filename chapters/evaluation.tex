@@ -3,8 +3,26 @@
 % !TEX spellcheck = en-US
 %%=========================================
 
-\chapter{Evaluation}
+\chapter{Evaluation of Project Approaches}
 \label{ch:evaluation}
 
+There are several approaches for creating a CSP abstraction. The three main approaches, \textit{programming language}, \textit{library} and \textit{run-time system} will be assessed. At the end of the assessment, an approach will be chosen for the project. 
+
+\section{Assessment}
+
+The first option is to create a new programming language. This gives total freedom when it comes to design, specifications, and implementation. Two main approaches are outlined, either creating a new language, or creating a superset of an existing language. A superset in this context means basing the syntax and semantics of an existing language, and extending it with new constructs. An example of a new language is occam (Section \ref{sssec:occam}), while an example of a superset is XC (Section \ref{sssec:xc}). The programming language implementation has to be considered, usually between the choices of an interpreter, a compiler and a translator. The amount of work and thought that has to be put into designing and implementing a programming language is significant. The easiest approach, considering the amount of time available and competence level required, would be creating a superset of C and implementing a translator for the language. The translator could then translate source code to C\hyp{}compliant code.
+
+The second option is to create a library. Many successful CSP libraries have been created for other languages such as C++ and Java (Section \ref{subsec:csp_prog_lib}), which allows reviewing what works and what not. A library has the advantage of being more available, and can be implemented directly in the native programming language, making it more portable. The downside is the limitations in the language itself. One cannot often create new keywords or operators with libraries\footnote{at least not in C, without heavy use of macro magic}, and a CSP library could benefit from this. 
+
+Third option is to create a run\hyp{}time system. This has the advantage of being much more flexible than libraries, allowing more direct control of the execution model in the program. Aspects such as task scheduling and resource management are possible to control in run\hyp{}time systems, which are important to consider for a CSP library. Creating a run-time system is more demanding than a library, requiring more knowledge of the execution model of the programming language.
+
+
+\section{Conclusion of Assessment}
+
+For this project, with limited time available, creating a new programming language would most likely be too ambitious. The challenge of designing and implementing the programming language is not an easy task, and the end result would probably end up as more of a proof of concept rather than a fully fledged product. A new programming language is probably not something that would gain much popularity either. This does however rule out the possibility of custom syntax and operators, which would be very beneficial. 
+
+Creating a library does sort out the problem of availability, as C is one of the most popular and widespread languages still to date. This does limit the library to the limitations of C, which can be a challenge in code expressiveness and memory safety. A run\hyp{}time system is also necessary for the library, as there needs to be some control of task scheduling in the library. 
+
+With this reasoning, the choice of a library with a run\hyp{}time system for scheduling and resource handling is chosen for this project.
 
 
