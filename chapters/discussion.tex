@@ -28,21 +28,22 @@ ProXC does not however support abstractions such as pipes, subordinate processes
 
 When it comes to correct usage and functionality, ProXC gives the necessary tools to express CSP abstractions in C programs. However, it is not perfect. Some considerable shortcomings and limitations are discussed in this section.
 
-\subsection{Enforcing Incorrect Usage}
+\section{Enforcing Incorrect Usage}
 
 ProXC provides a framework for CSP abstractions, which allows a programmer to write their C program in the CSP paradigm. However, ProXC is not omnipotent. It only serves as a potential framework for the programmer to use. Compared to occam and XC, where the framework is embedded in the language, the programmer is enforced to conform to the CSP paradigm. Using ProXC, the programmer can do whatever the C language allows, which most of the time is not conforming to the CSP paradigm. That is why ProXC does not enforce incorrect or bad usage, and it is up to the programmer to enforce proper usage to attain correct CSP abstractions.
 
-\subsection{Fixed Stack}
+\section{Fixed Stack}
+\label{sec:fixed_stack}
 
 Each process, as a coroutine, has an individual stack. This stack currently has a fixed size at 8 KiB. Stack overflows is entirely possible with such a small stack size. Causing a stack overflow is undefined behaviour, and in best case segmentation faults the program. This consequently discourages large stack allocations and recursive function calls in processes.
 
 A variable sized stack took too much time to implement, so a fixed stack size was favored for simplicity. A more advanced variable sized stack could potentially be implemented in the future. 
 
-\subsection{Simple Scheduler Policy}
+\section{Simple Scheduler Policy}
 
 As of now, the scheduler policy for ready processes is a straightforward FIFO queue. Since ProXC does not deal with deadlines and no considerations are taken for blocking calls and multi\hyp{}core support, a simple FIFO queue policy is sufficient. This could be an area of improvement if the simple FIFO queue proves to be inadequate for better deterministic running times of processes. 
 
-\subsection{Portability}
+\section{Portability}
 \label{sec:portability}
 
 One major weakness of the current implementation of ProXC is how context switching between coroutines is implemented. Since it is implemented in handwritten assembly, makes ProXC naturaly not portable for architectures where the context switching is not written for. As of writing this, context switching for i386 and x86\_64 architectures (32/64\hyp{}bit) is implemented.

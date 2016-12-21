@@ -6,7 +6,7 @@
 \chapter{ProXC - The Library}
 \label{ch:proxc_library}
 
-This chapter will go into further details on what basis ProXC is formed from. Details regarding library design and implementation are explained in Chapter \ref{ch:design} and \ref{ch:implementation}, respectively. 
+This chapter will go into further details on what basis ProXC is formed from. Details regarding library design and implementation are explained in Chapter \ref{ch:design_implementation}. 
 
 
 \section{Introduction to ProXC}
@@ -26,7 +26,7 @@ ProXC aims to achieve the following goals:
 
 The idea with ProXC is the ease of use and simple to incorporate in new and existing C programs. This means the library should not introduce a large number of keywords, macros and functions to be able to use the library. The amount of interactions with ProXC should be minimal, and the programmer should not know the implementation details of the introduced data types and functions. This is why no macro magic is used when interfacing with ProXC. 
 
-ProXC is \textit{not} a hand\hyp{}holding tool for programmers. All existing problems with C, such as NULL pointer dereferencing, memory leaks, pointer aliasing, and much more, is still possible when using ProXC. One can even disregard the CSP model and use global variables instead of message passing. ProXC will not complain. However, ProXC aims to ensure that when a program faults, the origin of the problem is not the library, but the programmer. 
+ProXC is \textit{not} a hand\hyp{}holding tool for programmers. All existing problems with C, such as NULL pointer dereferencing, memory leaks, pointer aliasing, and much more, is still possible when using ProXC. One can even disregard the CSP model and use global variables instead of message passing. ProXC will not complain. However, ProXC aims to ensure that when a program faults, the origin of the problem is not the library, but the programmer.
 
 The name ProXC, pronounced ``\textit{prox\hyp{}sea}'', is an abbreviation of ``\textit{Programming XC}''. The name is inspired by the CSP language XC (Section \ref{sssec:xc}). Since XC is a CSP programming language, as well as a superset of C, ProXC makes a fitting name for a CSP library for C. 
 
@@ -52,7 +52,35 @@ The complete set of features for ProXC is as follows:
     \item Suspension of processes for a relative timeout, granularity of microseconds
 \end{itemize}
 
-\section{API Design}
+\section{Library API}
 
-FIXME API
+The \textit{Application Programming Interface} (API) for the library is presented below. The relevant code is found in the files \texttt{proxc.h} and \texttt{proxc.c}. Note that the header file \texttt{proxc.h} is the API header file, and is the only code the programmer interfaces with. The API header file can be found in Appendix \ref{ch:api_header}
+
+\begin{itemize}[topsep=0em,itemsep=-1em,partopsep=0.5em,parsep=1em]
+    \item \texttt{START}: initializes library and run\hyp{}time system. Takes a function which starts as main process. Must be called before any other library call.
+    \item \texttt{EXIT}: exits the library. The run\hyp{}time system will clean up any resources, and returns as if START call returned. Can be called from any process context. 
+    \item \texttt{ARGN}: returns the Nth argument for a process. 
+    \item \texttt{YIELD}: explicitly yields the running process to the scheduler.
+    \item \texttt{SLEEP}: suspends the running process for a relative given amount of time. Granularity of microseconds. 
+    \item \texttt{PROC}: creates a process block for a composite process tree. Takes a function and zero\hyp{}or\hyp{}more function arguments. 
+    \item \texttt{PAR}: creates a parallel block for a composite process tree. Takes one\hyp{}or\hyp{}more composite process blocks and returns a parallel block.
+    \item \texttt{SEQ}: creates a sequential block for a composite process tree. Takes one\hyp{}or\hyp{}more composite process blocks and returns a sequential block.
+    \item \texttt{GO}: asynchronously spawns a composite process. Takes one composite process block.
+    \item \texttt{RUN}: synchronously spawns a composite process. Takes one composite process block.
+    \item \texttt{CHAN\_GUARD}: creates a guarded channel read for an alternation process. Takes a conditional, a channel, variable to store data in, and size of the data, and returns a guarded event.
+    \item \texttt{TIME\_GUARD}: creates a guarded timeout for an alternation process. Takes a conditional and a relative expiration time, and returns a guarded event.
+    \item \texttt{SKIP\_GUARD}: creates a guarded skip for an alternation process. Takes a conditional, and returns a guarded event.
+    \item \texttt{ALT}: creates and executes an alternation process. Takes one\hyp{}or\hyp{}more guarded events, and returns the key for the synchronized event. 
+    \item \texttt{CHOPEN}: creates a channel of a given type. Takes the size of the data type, and returns a channel.
+    \item \texttt{CHCLOSE}: closes a given channel.
+    \item \texttt{CHWRITE}: writes data on a given channel. Takes a channel, the variable to be written and the size of the variable, and returns if the operation was a success.
+    \item \texttt{CHREAD}: reads data on a given channel. Takes a channel, a variable to write to and the size of the variable, and returns if the operation was a success.
+\end{itemize}
+
+\section{Influences}
+\label{sec:influences}
+
+Some external influences from existing concurrent programming languages has affected the design choices. The primary source of influences comes from occam, XC and Go, all described in Section \ref{subsec:csp_prog_lang}. The libraries C++CSP2 and JCSP has also influenced some design choices, all described in Section \ref{subsec:csp_prog_lib}.
+
+Occam directly influences the use of composite processes, as well as the keywords \texttt{PAR} and \texttt{SEC} which are also used to describe parallel and sequential processes. The keyword \texttt{RUN} comes from C++CSP2 and JCSP, which are used to synchronously execute a composite process. The keyword \texttt{GO} is influenced by Go, which uses \texttt{go} to asynchronously spawn single functions as goroutines. The keyword \texttt{PROC} is influenced by C++CSP2 and JCSP, which explicitly creates class instances as processes in a composite process definition. 
 

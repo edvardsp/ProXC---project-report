@@ -15,9 +15,13 @@
 \usepackage[numbers]{natbib} % Use this command if you want to refer to the literature by numbers, e.g., [1]
 \usepackage{setspace}
 \usepackage{textcomp}
+\usepackage[bottom]{footmisc}
 \usepackage{parcolumns}
 \usepackage[export]{adjustbox}
 \linespread{1.5}
+
+\usepackage{chngcntr}
+\counterwithout{footnote}{chapter}
 
 \usepackage{afterpage}
 \newcommand\blankpage{%
@@ -109,9 +113,42 @@
     morestring=[b]",%
     morestring=[s]{`}{`},%
 }
-\lstdefinestyle{Golang}{
+\lstdefinestyle{CustomGo}{
     tabsize=4,    
     language=Golang,
+    basicstyle=\footnotesize\ttfamily,
+    upquote=true,
+    aboveskip={1.5\baselineskip},
+    columns=fixed,
+    showstringspaces=false,
+    extendedchars=false,
+    escapechar=@,
+    breaklines=true,
+    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+    frame=tb,
+    aboveskip=1em,
+    belowskip=1em,
+    numbers=left,
+    showtabs=false,
+    showspaces=false,
+    showstringspaces=false,
+    identifierstyle=\ttfamily,
+    keywordstyle=\color{blue},
+    commentstyle=\color{yellow!30!black},
+    stringstyle=\color{green!40!black},
+    numberstyle=\color{black},
+    identifierstyle=\color{black},
+}
+\lstdefinelanguage{Occam}{
+    morekeywords=[1]{SEQ,PAR,IF,ALT,WHILE,CASE,VALOF,PROC,PROCESSOR,PLACED,PRI,RESULT},%
+    morekeywords=[2]{INT,INT16,INT32,INT64,REAL,REAL32,REAL64,BYTE,BOOL,TRUE,FALSE,AFTER,AND,AT,BITAND,BITNOT,BITOR,CHAN,FOR,FROM,INCLUDE,IS,MAPPING,MAP,SET,ONTO,DO,CONFIG,MINUS,PLUS,TIMES,REM,MOSTNEG,MOSTPOS,NETWORK,NODE,EDGE,CONNECT,WITH,HOST,ARC,NOT,OF,OR,PLACE,PORT,PROTOCOL,RETYPES,ROUND,TRUNC,SIZE,SKIP,STOP,TIMER,USE,VAL},%
+    sensitive=true,%
+    morecomment=[l]{--},%
+    morestring=[b]",%
+}
+\lstdefinestyle{CustomOccam}{
+    tabsize=4,    
+    language=Occam,
     basicstyle=\footnotesize\ttfamily,
     upquote=true,
     aboveskip={1.5\baselineskip},

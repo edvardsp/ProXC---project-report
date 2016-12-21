@@ -26,11 +26,9 @@ ProXC and SPoC are single\hyp{}core implementations. To make the results compara
 
 \subsection{Context Switch Test}
 
-FIXME
-
 Benchmarking context switching times can be very difficult to get an accurate measure, so a more rough approach is used to get a more ballpark figure on the context switch times. This test is based on the test done in \citet{rainvm}.
 
-The benchmark tests one\hyp{}or\hyp{}more for\hyp{}loops iterating 1 million times. First, the raw instruction speed of the for\hyp{}loop is timed. A single process is spawned running the for\hyp{}loop, and timing the execution time. 
+This benchmark tests a for\hyp{}loop iterating 1 million times. First, the raw instruction speed of the for\hyp{}loop is timed. A single process is spawned running the for\hyp{}loop, timing the total execution time. 
 
 \begin{lstlisting}[style={CustomC},frame={},numbers={none}]
 for (uint64_t i = 0; i < 1000000; ++i) { /* no-op */ }
@@ -40,7 +38,6 @@ The results for each language is shown in Table \ref{tab:instruction_speed_resul
 
 \begin{table}[h!]
     \centering
-    \label{tab:instruction_speed_results}
     \begin{tabular}{l|r}
             \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
         &   \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}Time per loop iteration\\ (nanoseconds)\end{tabular}} \\ \hline
@@ -49,21 +46,21 @@ The results for each language is shown in Table \ref{tab:instruction_speed_resul
         ProXC / GCC 5.4.0  & 1 \\ 
     \end{tabular}
     \caption{Instruction speed results}
+    \label{tab:instruction_speed_results}
 \end{table}
 
 To no surprise, ProXC achieves a running time of 1 nanosecond for each loop iteration. An empty for\hyp{}loop in C is hard to outperform. Interestingly, Go matches this speed with no problem, still with the added run\hyp{}time overhead. SPoC should have matched ProXC, as it generates standard C code.
 
-Next is to context switching in each loop iteration instead a no\hyp{}op. 
+Next is to context switch in each loop iteration instead a no\hyp{}op. 
 
 \begin{lstlisting}[style={CustomC},frame={},numbers={none}]
 for (uint64_t i = 0; i < 1000000; ++i) { yield(); }
 \end{lstlisting}
 
-Now, $x = 2$ and $x = 10$ number of processes are executed in parallel. The results for each $x$ is shown in Table \ref{tab:context_switch_results} 
+Now, $x$ number of processes are executed in parallel, instead of only one, running the for\hyp{}loop with a yield in each loop iteration. For $x = 2$ and $x = 10$ is timed. The results for each $x$ is shown in Table \ref{tab:context_switch_results} 
 
 \begin{table}[h!]
     \centering
-    \label{tab:context_switch_results}
     \begin{tabular}{l|r|r}
             \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
         &   \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Time per loop iteration\\ $x = 2$ (nanoseconds)\end{tabular}} 
@@ -73,13 +70,13 @@ Now, $x = 2$ and $x = 10$ number of processes are executed in parallel. The resu
         ProXC / GCC 5.4.0  & 130 &  664 \\
     \end{tabular}
     \caption{Context switch results}
+    \label{tab:context_switch_results}
 \end{table}
 
-The benchmarking results in Table \ref{tab:context_switch_results} is the time for one loop iteration for all $x$ processes. In other words, the time result is calculated by $t/10^6$, not $t/(x\times10^6)$. For a more intuitive representation of the time results, a ratio comparisons between the languages themselves are shown in Table \ref{tab:running_time_ratios}. The first column is the ratio between the sequential time in Table \ref{tab:instruction_speed_results} and $x=2$, and the second column is the ratio between $x = 10$ and $x = 2$, to 2 decimal points. If the languages had an ideal system with no overhead, the ratios would be $2:1$ and $5:1$ respectively.
+The benchmarking results in Table \ref{tab:context_switch_results} is the time for one loop iteration for all $x$ processes, not for one single process. In other words, the time result is calculated by $t/10^6$, not $t/(x\times10^6)$. For a more intuitive representation of the time results, a ratio comparisons between the languages themselves are shown in Table \ref{tab:running_time_ratios}. The first column is the ratio between the sequential time in Table \ref{tab:instruction_speed_results} and $x=2$, and the second column is the ratio between $x = 10$ and $x = 2$, to 2 decimal points. If the languages had an ideal system with no overhead, the ratios would be $2.00$ and $5.00$ respectively.
 
 \begin{table}[h!]
     \centering
-    \label{tab:running_time_ratios}
     \begin{tabular}{l|r|r}
             \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
         &   \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}$(x = 2)/$Sequential\\ Ratio, 2 d.p.\end{tabular}} 
@@ -89,15 +86,15 @@ The benchmarking results in Table \ref{tab:context_switch_results} is the time f
         ProXC / GCC 5.4.0  & 130.00 & 5.10 \\ 
     \end{tabular}
     \caption{Running time ratios}
+    \label{tab:running_time_ratios}
 \end{table}
 
-What the results show in Table \ref{tab:running_time_ratios} is the significance of introducing context switching does to the sequential code. For ProXC, this was $65$ times increased running time than what was ideal. However, both Go and SPoC does not run ideally either, both getting an increased running time of $165$ and $25$ times more than ideal. Despite this, all languages has a linear increase in running times, when it comes to concurrent systems. ProXC does however have a unusual ratio of $5.10$, meaning a better increase in running time than ideal. Reasons for this might be the operating system helping with caching memory allocations for stack use. 
+What the results show in Table \ref{tab:running_time_ratios} is the significance of introducing context switching does to the sequential code. For ProXC, it was a $65$ times increased running time compared to an ideal concurrent system. However, both Go and SPoC does not run ideally either, both getting an increased running time of $165$ and $25$ times more than ideal. Despite this, all languages has a linear increase in running times, when it comes a linear increase in processes. ProXC does however have a unusual ratio of $5.10$, meaning a better increase in running time than ideal. Reasons for this might be the operating system helping with caching memory allocations for stack use. 
 
-Some naive calculations is used to get a rough estimate of context switch times. The results for $x = 2$ in Table \ref{tab:context_switch_results}, divded by 2, is subtracted by the sequential results in Table \ref{tab:instruction_speed_results}. This yields the results in Table \ref{tab:context_switch_time_estimate}.
+Some naive calculations is used to get a rough estimate of context switch times. The results for $x = 2$ in Table \ref{tab:context_switch_results}, divided by 2, is subtracted by the sequential results in Table \ref{tab:instruction_speed_results}. This yields the results in Table \ref{tab:context_switch_time_estimate}.
 
 \begin{table}[h!]
     \centering
-    \label{tab:context_switch_time_estimate}
     \begin{tabular}{l|r}
             \multicolumn{1}{c|}{\begin{tabular}[c]{@{}c@{}}Language/\\ Compiler\end{tabular}} 
         &   \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}Rough estimate\\ context switch time\\ (nanoseconds)\end{tabular}} \\ \hline
@@ -106,6 +103,7 @@ Some naive calculations is used to get a rough estimate of context switch times.
         ProXC / GCC 5.4.0  &  64 \\ 
     \end{tabular}
     \caption{Context switch time estimate}
+    \label{tab:context_switch_time_estimate}
 \end{table}
 
 This shows that ProXC manages to context switch faster than both SPoC and Go, which is promising results!
@@ -131,13 +129,13 @@ occam/SPoC and ProXC outperforms Go in this test. It seems like there is a bigge
 
 \subsection{Concurrent Prime Sieve}
 
-FIXME concurrent throughput/strain.
-
 Lastly, a more diverse benchmark is the concurrent prime sieve. This was popularized as an elegant piece of concurrent code in Go \citep{goconcurrentprime}. The equivalent code is implemented in occam and ProXC.
+
+The concurrent sieve is a daisy\hyp{}chained set of processes, which each represent a prime number. At the start of the chain is a generator, which outputs all natural numbers and sends them through the daisy\hyp{}chain. When a process first receives a number, this number becomes that process' prime number. All other numbers it recieves will be tested for divisibility against the prime number. If yes, then discard, else send it further down the daisy\hyp{}chain. At the end of the daisy\hyp{}chain is the final output.
 
 The sieve is set to calculate the 4000th prime, which runs 500 times. The resulting time is the average over all runs to calculate each prime, in other words the average of the calculated $t/(4000)$. 
 
-This type of test tries to measure more generalized performance regarding many more processes, channel operations and concurrency system overhead.
+This benchmark tries to measure more generalized performance regarding many processes, channel operations and concurrency system overhead.
 
 Table \ref{tab:concurrent_prime_sieve} shows the results.
 

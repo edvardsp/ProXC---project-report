@@ -8,17 +8,19 @@
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
 
-This paper describes the design and implementation of ProXC, a \textit{Communicating Sequential Processes} (CSP) inspired concurrency library for C. ProXC aims to enable C programs to use CSP abstractions, allowing a more expressive and safer design of concurrent systems. The choice of writing a library was the result of an evaluation, assessing which approach to create the CSP abstracted framework for C. 
+This paper describes the design and implementation of ProXC, a \textit{Communicating Sequential Processes} (CSP) inspired concurrency library for the C programming language. ProXC aims to enable C programs to use CSP abstractions, allowing a more expressive and safer design of concurrent systems. The choice of implementing a library was the result of an evaluation, assessing which approach to create the framework. 
 
-The CSP abstractions in ProXC are a collection of lightweight processes, which communicates via channels. Composite processes can be defined, where the execution ordering and synchronous and asynchronous execution is supported. Alternation construct is also possible, allowing a process to wait on multiple channel reads, with or without a timeout or a skip-able alternative. Process suspension is also possible. 
+The CSP abstractions in ProXC are a collection of lightweight processes, which communicates via channels. Composite processes can be defined, where the execution ordering and synchronous and asynchronous execution are supported. Alternation construct is also possible, allowing a process to wait on multiple channel reads, with or without a timeout or a skip-able alternative. Process suspension is also possible. 
 
 ProXC is a single\hyp{}core implementation, which emulates concurrency by implementing stackful coroutines. Each process is a coroutine, with an underlying run\hyp{}time system taking care of scheduling, synchronization and resource handling between processes. 
 
-Limitations of ProXC is also discussed, explaining what and what not ProXC achieves, can and can not do, and what could have been done better.
+Limitations of ProXC is also discussed, explaining what ProXC can and can not do, and what in hindsight could have been done better during development of ProXC.
 
-The abstractions ProXC provides is argued to be correct and expressive, highlighting the library features and how these compare to the CSP abstractions defined by the formal language. Furthermore, some simple benchmark comparisons between ProXC and other existing CSP based languages are conducted, giving ProXC promising results for the concurrent throughput. 
+The abstractions ProXC provides is argued to be correct and expressive. By highlighting the library features and how these compare to the abstractions in the formal language CSP, ProXC is concluded to be a feature rich CSP abstraction framework for C programs. Furthermore, some simple benchmark comparisons between ProXC and other existing CSP based languages are conducted, giving ProXC promising results for concurrent throughput. 
 
 The source code for ProXC is publicly available at GitHub, released with the open\hyp{}source MIT license. 
 
 
 \vfill
+
+\afterpage{\blankpage}

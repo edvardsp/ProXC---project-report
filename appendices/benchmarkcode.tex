@@ -5,5 +5,500 @@
 \chapter{Benchmark Code}
 \label{ch:benchmark_code}
 
-This is an example of an Appendix. You can write an Appendix in the same way as a chapter, with sections, subsections, and so on.
+\section*{Context Switch Test}
+
+\subsection*{ProXC}
+
+\begin{lstlisting}[caption={Context switch code for ProXC},style={CustomC}]
+#include <stdio.h>
+#include <stdint.h>
+#include <time.h>
+#include <proxc.h>
+#define X     10
+#define ITERS 1000000UL
+#define RUNS  1000
+void worker(void) {
+    for (uint64_t iter = 0; iter < ITERS; ++iter) {
+        YIELD();
+        //__asm__("");
+    }
+}
+void bench(void) {
+    printf("ProXC context bench\n");
+    printf("X: %d\n", X);
+    printf("ITERS: %lu\n", ITERS);
+    printf("RUNS: %d\n", RUNS);
+    double summa = 0.0;
+    for (int run = 0; run < RUNS; run++) {
+        clock_t start, stop;
+        start = clock();
+        RUN(PAR(
+            PROC(worker), 
+            PROC(worker), 
+            PROC(worker), 
+            PROC(worker), 
+            PROC(worker), 
+            PROC(worker), 
+            PROC(worker), 
+            PROC(worker), 
+            PROC(worker), 
+            PROC(worker)
+        ));
+        stop = clock();
+        double elapsed_ns = (double)(stop - start);
+        elapsed_ns *= 1000.0 * 1000.0 * 1000.0 / CLOCKS_PER_SEC;
+        double loop_time = elapsed_ns / ITERS;
+        summa += loop_time;
+    }
+    printf("average time per loop iter: %fns\n", summa / RUNS);
+}
+int main(void) {
+    proxc_start(bench);
+}
+\end{lstlisting}
+
+\subsection*{Go}
+
+\begin{lstlisting}[caption={Context switch code for Go},style={CustomGo}]
+package main
+import (
+	"fmt"
+	"runtime"
+	"sync"
+	"time"
+)
+const (
+	X     = 10
+	ITERS = 1000000
+	RUNS  = 1000
+)
+func worker(wg *sync.WaitGroup) {
+	for i := 0; i < ITERS; i++ {
+		runtime.Gosched()
+	}
+	wg.Done()
+}
+func main() {
+	runtime.GOMAXPROCS(1)
+	fmt.Println("Go context bench")
+	fmt.Printf("X: %d\n", X)
+	fmt.Printf("ITERS: %d\n", ITERS)
+	fmt.Printf("RUNS: %d\n", RUNS)
+	var summa float64 = 0.0
+	var wg sync.WaitGroup
+	for run := 0; run < RUNS; run++ {
+		wg.Add(X)
+		start := time.Now()
+		for x := 0; x < X; x++ {
+			go worker(&wg)
+		}
+		wg.Wait()
+		elapsed := float64(time.Since(start).Nanoseconds())
+		loop_time := elapsed / ITERS
+		summa += loop_time
+	}
+	fmt.Println("")
+	fmt.Println("Results:")
+	fmt.Printf("average time per loop iter: %fns\n", summa/RUNS)
+}
+\end{lstlisting}
+
+\subsection*{occam}
+
+\begin{lstlisting}[caption={Context switch code for occam},style={CustomOccam}]
+#INCLUDE "hostio.inc"
+#USE "hostio.lib"
+#H #include <time.h>
+PROC worker(VAL INT iters)
+  INT iter :
+  SEQ iter = 0 FOR iters
+    PAR -- hack to force SPoC a context switch
+      SKIP
+:
+PROC bench(CHAN OF SP fs,ts, []INT mem)
+  VAL x     IS 1 : 
+  VAL iters IS 1000000 :
+  VAL runs  IS 1000 :
+  INT start, stop, elapsed :
+  REAL64 summa, iter :
+  SEQ
+    #C printf("occam ctx switch\n");
+    #C printf("X: %d\n", $x);
+    #C printf("ITERS: %d\n", $iters);
+    #C printf("RUNS: %d\n", $runs);
+    summa := 0.0(REAL64)
+    SEQ run = 0 FOR runs
+      SEQ
+        #C $start = clock();
+        PAR i = 0 FOR x
+          SEQ iter = 0 FOR iters
+            SKIP
+        #C $stop = clock();
+        #C $elapsed = (double)($stop - $start) * 1000.0 * 1000.0 * 1000.0 / CLOCKS_PER_SEC;
+        #C $summa += $elapsed / $iters;
+    #C printf("Average: %fns\n", $summa / $runs);
+:
+\end{lstlisting}
+
+\section*{Commstime Test}
+
+\subsection*{ProXC}
+
+\begin{lstlisting}[caption={Commstime code for ProXC},style={CustomC}]
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <proxc.h>
+#define WARMUP  1000
+#define REPEAT  1000000
+#define RUNS    1000
+void prefix(void) { 
+    Chan *a = ARGN(0), *b = ARGN(1);
+    int value = 0;
+    for(;;) {
+        CHWRITE(a, &value, int);
+        CHREAD(b, &value, int);
+    }
+}
+void delta(void) { 
+    Chan *a = ARGN(0), *c = ARGN(1), *d = ARGN(2);
+    int value;
+    for (;;) {
+        CHREAD(a, &value, int);
+        CHWRITE(d, &value, int);
+        CHWRITE(c, &value, int);
+    }
+}
+void successor(void) {
+    Chan *b = ARGN(0), *c = ARGN(1);
+    int value;
+    for (;;) {
+        CHREAD(c, &value, int);
+        value++;
+        CHWRITE(b, &value, int);
+    }
+}
+void consumer(void) {
+    Chan *d = ARGN(0);
+    clock_t start, stop;
+    double summa = 0.0, elapsed;
+    int x;
+    printf("ProXC commstime\n");
+    printf("WARMUP: %d\n", WARMUP);
+    printf("REPEAT: %d\n", REPEAT);
+    printf("RUNS: %d\n", RUNS);
+    for (int j = 0; j < RUNS; j++) {
+        for (int i = 0; i < WARMUP; i++ ) {
+            CHREAD(d, &x, int);
+        }
+        start = clock();
+        for (int i = 0; i < REPEAT; i++ ) {
+            CHREAD(d, &x, int);
+        }
+        stop = clock();
+        elapsed = (double)(stop - start);
+        elapsed *= 1000.0 * 1000.0 * 1000.0 / CLOCKS_PER_SEC;
+        summa += elapsed / REPEAT;
+    }
+    printf("average: %fns\n", summa / RUNS);
+}
+void commstime(void) {
+    Chan *a = CHOPEN(int);
+    Chan *b = CHOPEN(int);
+    Chan *c = CHOPEN(int);
+    Chan *d = CHOPEN(int);
+    GO(PAR(
+           PROC(prefix, a, b),
+           PROC(delta, a, c, d),
+           PROC(successor, b, c)
+       )
+    );
+    RUN( PROC(consumer, d) );
+}
+int main(void) {
+    proxc_start(commstime);
+    return 0;
+}
+\end{lstlisting}
+
+\subsection*{Go}
+
+\begin{lstlisting}[caption={Commstime code for Go},style={CustomGo}]
+package main
+import (
+	"fmt"
+	"runtime"
+	"time"
+)
+const (
+	WARMUP = 1000
+	REPEAT = 1000000
+	RUNS   = 100
+)
+func prefix(a, b chan int) {
+	value := 0
+	for {
+		a <- value
+		value = <-b
+	}
+}
+func delta(a, c, d chan int) {
+	var value int
+	for {
+		value = <-a
+		d <- value
+		c <- value
+	}
+}
+func successor(b, c chan int) {
+	var value int
+	for {
+		value = <-c
+		value++
+		b <- value
+	}
+}
+func main() {
+	runtime.GOMAXPROCS(1)
+	fmt.Println("Go commstime")
+	fmt.Printf("WARMUP: %d\n", WARMUP)
+	fmt.Printf("REPEAT: %d\n", REPEAT)
+	fmt.Printf("RUNS: %d\n", RUNS)
+	a := make(chan int)
+	b := make(chan int)
+	c := make(chan int)
+	d := make(chan int)
+	go prefix(a, b)
+	go delta(a, c, d)
+	go successor(b, c)
+	summa := 0.0
+	for run := 0; run < RUNS; run++ {
+		for i := 0; i < WARMUP; i++ {
+			<-d
+		}
+		start := time.Now()
+		for i := 0; i < REPEAT; i++ {
+			<-d
+		}
+		elapsed := float64(time.Since(start).Nanoseconds())
+		summa += elapsed / REPEAT
+	}
+	fmt.Printf("Average: %fns\n", summa/RUNS)
+}
+\end{lstlisting}
+
+\subsection*{occam}
+
+\begin{lstlisting}[caption={Commstime code for occam},style={CustomOccam}]
+#INCLUDE "hostio.inc"
+#USE "hostio.lib"
+#H #include <time.h>
+PROC prefix(CHAN OF INT a, b)
+  INT value :
+  SEQ
+    value := 0
+    WHILE TRUE
+      SEQ
+        a ! value
+        b ? value
+:
+PROC delta(CHAN OF INT a, c, d)
+  INT value :
+  WHILE TRUE
+    SEQ
+      a ? value
+      d ! value
+      c ! value
+:
+PROC successor(CHAN OF INT b, c)
+  INT value :
+  WHILE TRUE
+    SEQ
+      c ? value
+      b ! value + 1 
+:
+PROC commstime(CHAN OF SP fs,ts, []INT mem)
+  CHAN OF INT a, b, c, d :
+  VAL warmup IS 1000 :
+  VAL repeat IS 1000000 :
+  VAL runs   IS 1000 :
+  INT start, stop :
+  REAL64 summa, elapsed :
+  SEQ
+    #C printf("occam commstime\n");
+    #C printf("WARMUP: %d\n", $warmup);
+    #C printf("REPEAT: %d\n", $repeat);
+    #C printf("RUNS: %d\n", $runs);
+    PAR
+      prefix(a, b)
+      delta(a, c, d)
+      successor(b, c)
+      INT x :
+      SEQ
+        SEQ run = 0 FOR runs
+          SEQ
+            SEQ i = 0 FOR warmup
+              d ? x
+            #C $start = clock();
+            SEQ i = 0 FOR repeat
+              d ? x
+            #C $stop = clock();
+            #C $elapsed = (double)($stop - $start);
+            #C $elapsed *= 1000.0 * 1000.0 * 1000.0 / CLOCKS_PER_SEC; 
+            #C $summa += $elapsed / $repeat;
+        #C printf("Average: %f\n", $summa / $runs);
+        so.exit(fs,ts,sps.success)
+:
+\end{lstlisting}
+
+\section*{Concurrent Prime Sieve Test}
+
+\subsection*{ProXC}
+
+\begin{lstlisting}[caption={Concurrent prime sieve code for ProXC},style={CustomC}]
+#include <stdio.h>
+#include <time.h>
+#include <proxc.h>
+void generate(void) {
+    Chan *chlong = ARGN(0);
+    long i = 2;
+    for (;;) {
+        CHWRITE(chlong, &i, long);
+        i++;
+    }
+}
+void filter(void) {
+    Chan *in_chlong = ARGN(0);
+    Chan *out_chlong = ARGN(1);
+    long prime = (long)(long *)ARGN(2);
+    long i;
+    for (;;) {
+        CHREAD(in_chlong, &i, long);
+        if (i % prime != 0) {
+            CHWRITE(out_chlong, &i, long);
+        }
+    }
+}
+#define PRIME 4000
+static Chan *chs[PRIME+1];
+void sieve(void) {
+    chs[0] = CHOPEN(long);
+    Chan *chlong = chs[0];
+    long prime = 0;
+    long start, stop;
+    double elapsed;
+    start = clock();
+    GO(PROC(generate, chlong));
+    for (long i = 0; i < PRIME; i++) {
+        CHREAD(chlong, &prime, long);
+        chs[i+1] = CHOPEN(long);
+        Chan *new_chlong = chs[i+1];
+        GO(PROC(filter, chlong, new_chlong, (void *)prime));
+        chlong = new_chlong;
+    }
+    stop = clock();
+    elapsed = (double)(stop - start);
+    elapsed *= 1000.0 * 1000.0 / CLOCKS_PER_SEC;
+    printf("%.2f\n", elapsed / PRIME);
+}
+int main(void) {
+    proxc_start(sieve);
+}
+\end{lstlisting}
+
+\subsection*{Go}
+
+\begin{lstlisting}[caption={Concurrent prime sieve code for Go},style={CustomGo}]
+package main
+import (
+	"fmt"
+	"runtime"
+	"time"
+)
+func Generate(ch chan<- int) {
+	for i := 2; ; i++ {
+		ch <- i
+	}
+}
+func Filter(in <-chan int, out chan<- int, prime int) {
+	for {
+		i := <-in // Receive value from 'in'.
+		if i%prime != 0 {
+			out <- i // Send 'i' to 'out'.
+		}
+	}
+}
+const (
+	PRIME = 4000
+)
+func main() {
+	runtime.GOMAXPROCS(1)
+	ch := make(chan int)
+	var prime int
+	start := time.Now()
+	go Generate(ch)
+	for i := 0; i < PRIME; i++ {
+		prime = <-ch
+		ch1 := make(chan int)
+		go Filter(ch, ch1, prime)
+		ch = ch1
+	}
+	elapsed := float64(time.Since(start).Nanoseconds())
+	fmt.Printf("%.2f\n", elapsed/1000.0/PRIME)
+}
+\end{lstlisting}
+
+\newpage
+
+\subsection*{occam}
+
+\begin{lstlisting}[caption={Concurrent prime sieve code for occam},style={CustomOccam}]
+#INCLUDE "hostio.inc"
+#USE "hostio.lib"
+#H #include <time.h>
+PROC generate(CHAN OF INT ch)
+  INT i :
+  SEQ
+    i := 2
+    WHILE TRUE
+      SEQ
+        ch ! i
+        i := i + 1
+:
+PROC filter(CHAN OF INT in, out)
+  INT i, prime :
+  SEQ
+    in ? prime
+    WHILE TRUE
+      SEQ
+        in ? i
+        IF
+          NOT ((i \ prime) = 0)
+            out ! i
+          TRUE
+            SKIP
+:
+PROC bench(CHAN OF SP fs,ts, []INT mem)
+  VAL numPrime IS 10000 :
+  [numPrime]CHAN OF INT chs :
+  INT prime :
+  INT start, stop :
+  REAL64 elapsed :
+  SEQ
+    #C $start = clock();
+    PAR
+      generate(chs[0])
+      PAR i = 0 FOR numPrime-1
+        filter(chs[i], chs[i+1])
+      SEQ
+        chs[numPrime-1] ? prime
+        #C $stop = clock();
+        #C $elapsed = (double)($stop - $start) * 1000.0 * 1000.0 / CLOCKS_PER_SEC;
+        #C printf("%d: %d\n", $numPrime, $prime);
+        #C printf("%.2f\n", $elapsed / $numPrime);
+        so.exit(fs,ts,sps.success)
+:
+
+\end{lstlisting}
 

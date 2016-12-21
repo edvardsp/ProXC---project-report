@@ -3,14 +3,17 @@
 % !TEX spellcheck = en-US
 %%=========================================
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Background}
 \label{ch:background}
 
 In this chapter a more in\hyp{}depth explanation of the different topics introduced in the introduction chapter is presented. These topics cover the required background knowledge for the project, which plays a important role in determining on what kind of development tool is to be implemented, how it is to be implemented, as well as showing what already exists of current solutions and tools.
 
-Each topic is presented on its own, and how it relates and affects the choices of the development tool.
+Each topic is presented on its own, and how it relates to the paper.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Concurrency vs. Parallelism}
 \label{sec:concurrency_vs_parallelism}
 
@@ -18,11 +21,10 @@ The notion of parallelism and concurrency in programs spawns from the limitation
 
 Parallelism in this sense refers to multiple programs running on multiple processors in parallel. This might look familiar to how concurrency is described, but it is important to not confuse these two terms together. Concurrency only serves as an abstraction for parallelism in a program, allowing the programmer to pretend multiple sequential programs are executed in parallel. This abstraction would be valid for both single and multi\hyp{}core, while parallelism describes a condition which only happens on multi\hyp{}core architectures. A more thorough and complete definition of concurrency and parallelism is described in \citet{benari2006}.
 
-FIXME
-
-Concurrency and parallelism forms the very core of this project. Section \ref{sec:csp} explains what CSP is, which forms its basis on concurrency. Understanding the underlying concepts of concurrency is important to understand what CSP entails. Further on, multi\hyp{}core support was also mentioned as a motivation for the potential speedup and a direct opportunity from the parallel nature in concurrent systems. Parallelism is directly tied to multicore, as both terms describe multiple programs executing simultaneously. 
+Concurrency and parallelism forms the very core of this project. Section \ref{sec:csp} explains what CSP is, which forms its basis on concurrency. Understanding the underlying concepts of concurrency is important to understand what CSP entails.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Threading Models}
 \label{sec:threading_models}
 
@@ -35,6 +37,7 @@ Kernel\hyp{}threading model is often directly supported in OS kernels, and is ca
 Hybrid-threading model combines the two models, and is called a \texttt{M:N} threading model. This model is running multiple kernel\hyp{}threads, with each kernel-thread running multiple user\hyp{}threads. Blocking calls is still a problem, but can be mitigated through dispatching a single kernel\hyp{}thread for the block user\hyp{}thread, and continue the rest of the scheduling on a new kernel\hyp{}thread. 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Memory Layout of C Programs}
 \label{sec:memory_layout_c}
 
@@ -65,6 +68,8 @@ See Figure \ref{fig:c_memory_layout} for outline of the memory layout.
 
 \FloatBarrier
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Stackful Coroutines}
 \label{sec:stackful_coroutines}
 
@@ -72,12 +77,14 @@ Coroutines are a generalized subroutines within a program, used for non-preempti
 
 Resuming and suspending stackful coroutines involves storing and swapping contexts of coroutines. Each coroutine has a context which represents the execution state of a coroutine at a given time. This execution state can be seen as a snapshot of the processor registers at a given place in the code execution. Suspending a coroutine is a matter of storing the current execution state in memory, and replace the execution state with another coroutine. Lastly, the program counter is replaced with the resuming coroutine. This effectively suspends the initial coroutine, and resumes the other. 
 
-Knowing what to store in execution states requires knowledge of the processor state, which is architecture dependent. This is why coroutine implementations often causes portability issues. The solution to this is looking at the calling convention for System V ABI\footnote{Application Binary Interface} \citep{systemvabi}, which is the convention almost all UNIX\hyp{}like architectures follow. 
+Knowing what to store in execution states requires knowledge of the processor state, which is architecture dependent. This is why coroutine implementations often causes portability issues. The solution to this is looking at the calling convention for System V \textit{Application Binary Interface} (ABI) \citep{systemvabi}, which is the convention almost all UNIX\hyp{}like architectures follow. 
 
 Calling conventions describes, on a low\hyp{}level, how subroutines receive parameters from their caller and how they return their result. This usually describes on register level which registers must be preserved by the callee, and which must not. Knowing this, a context structure and a context switching procedure can be outlined. 
 
 The context structure should contain the preserved registers specified by the calling convention and the program counter for a given coroutine. The context switch procedure must be a function call. This means all volatile variables remaining in non\hyp{}preserved registers will be pushed to the stack before calling the procedure. Then, in the procedure, all preserved registers are stored in the context structure, along with the program counter. When resuming, the preserved registers are loaded from the context structure and lastly sets its own program counter. This will cause a jump to the other coroutine context, which resumes as if the context switching procedure call returned. 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Communicating Sequential Processes}
 \label{sec:csp}
 
@@ -90,13 +97,15 @@ This does not mean however that there does not exists CSP implementations. These
 The CSP implementations range in varying popularity and use, and below is a summary of the most notable entries which relates to this project presented.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Programming Languages}
 \label{subsec:csp_prog_lang}
 
 Multiple programming languages implementing the CSP models in varying degree exists. Probably the most notable and truest implementation of the CSP model is occam. Other languages such as XC and Go is heavily influenced by the CSP model and occam. There exists other CSP languages such as Limbo \citep{limbo}, Joyce \citep{joyce}, and SuperPascal \citep{superpascal}, however occam, XC and Go seems to be the most influential and used languages to date\footnote{This is a highly subjective view, based on the popularity and relevance in the industry}. 
 
 
-\subsubsection{Occam}
+%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{occam}
 \label{sssec:occam}
 
 Occam is a concurrent programming language which builds upon the CSP model. It was created by INMOS \citep{occam} and first appeared in 1983. Occam was initially developed as the native programming language for the Transputer, their microprocessor architecture highly specialized for real-time parallel computing \citep{transputer}. 
@@ -124,6 +133,7 @@ SEQ
 
 Processes can be defined with the \texttt{PROC} keyword. The process can have zero\hyp{}or\hyp{}more arguments. 
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC},frame={},numbers={none},xleftmargin={4em}]
 PROC system()
   SEQ
@@ -131,9 +141,11 @@ PROC system()
     i := i + 1
 :   
 \end{lstlisting}
+\end{minipage}
 
 Processes are not allowed to share memory. All communication between processes is done through channels. Channels in occam are unbuffered and synchronized, which means both a sender and a receiver must be present on a channel to complete the transfer of data. Channels are also typed. Occam also requires disjointness on channels, meaning only one unique process can be a sender and a receiver on a given channel. In occam, the operator ``\texttt{!}'' is used to send on a channel, and ``\texttt{?}'' to receive on a channel.
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC},frame={},numbers={none},xleftmargin={4em}]
 INT x:
 CHAN OF INT c:
@@ -141,9 +153,11 @@ PAR
   c ? x
   c ! 1
 \end{lstlisting}
+\end{minipage}
 
 Occam also supports alternation, using the keyword \texttt{ALT}. This allows a process to wait on multiple channel reads at the same time. These are called alternatives, which can be guarded on a conditional boolean. This enables the alternative only if the conditional is true. A \texttt{SKIP} alternative may also be included, which as always available.
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC},frame={},numbers={none},xleftmargin={4em}]
 ALT
   a = b -> signal ? type:
@@ -152,6 +166,7 @@ ALT
     check(value)
   SKIP
 \end{lstlisting}
+\end{minipage}
 
 
 \subsubsection{XC}
@@ -169,6 +184,7 @@ par { f(); g(); }
 
 Threads in XC is not allowed to share memory. Just as in occam, all communication between threads must go through channels. Channels in XC behaves almost the same as in occam, mainly being typed and one\hyp{}to\hyp{}one. The operators \texttt{:>} and \texttt{<:} are used to receive and send values over a channel, respectively. 
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC},frame={},numbers={none},xleftmargin={4em}]
 chan c;
 int x;
@@ -177,11 +193,13 @@ par {
     c :> x;
 }
 \end{lstlisting}
+\end{minipage}
 
 There are three types of channels, namely interfaces, normal channels, and streaming channels. Interfaces specifies an interface between a client and a master thread, where the client can instantiate transactions through the interface. Interfaces are unbuffered and synchronized. Normal channels are used as a primitive way for threads to communicate, allowing to send and receive data. They are also unbuffered and synchronized. Streaming channels are a permanent connection between two threads, which are a buffered and asynchronous transfer of data.
 
-Alternation is also supported in XC, using the keyword \texttt{select} with a corresponding scope block \textit{\{\}}. Just like the switch construct, the scope block contains cases which consists of channel reads or channel writes. Each case can also be guarded by a conditional.
+Alternation is also supported in XC, using the keyword \texttt{select} with a corresponding scope block \texttt{\{\}}. Just like the switch construct, the scope block contains cases which consists of channel reads or channel writes. Each case can also be guarded by a conditional.
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC},frame={},numbers={none},xleftmargin={4em}]
 select {
     case enable_left => left :> v:
@@ -192,8 +210,10 @@ select {
         break;
 }
 \end{lstlisting}
+\end{minipage}
 
 
+%%%%%%%%%%%%%%%%%%
 \subsubsection{Go}
 \label{sssec:go}
 
@@ -203,45 +223,47 @@ Go started as a desire of a modern concurrent language, which was both fast and 
 
 The native support for parallelism in Go is through goroutines, which is their equivalent of coroutines. Goroutines are light\hyp{}weight processes, which are spawned with the keyword \texttt{go}. Goroutines are asynchronous by nature, meaning the process which spawns a goroutine does not wait for it to finish, compared to occam and XC which does wait. Goroutines must be functions, and not single statements.
 
-\begin{lstlisting}[style={Golang},frame={},numbers={none},xleftmargin={4em}]
+\noindent\begin{minipage}{\textwidth}
+\begin{lstlisting}[style={CustomGo},frame={},numbers={none},xleftmargin={4em}]
 func main() {
     go a()
     go b()
     runtime.Goexit()
 }
 \end{lstlisting}
+\end{minipage}
 
 Channels are also supported in Go, but are not mandatory to use. Their exists both buffered and unbuffered channels, and are type safe. Channels are created with the built\hyp{}in function \texttt{make}, which takes the data type and the capacity of the channel as arguments. If the capacity is omitted, the channel is unbuffered, else it is buffered.
 
-\begin{lstlisting}[style={Golang},frame={},numbers={none},xleftmargin={4em}]
-ch_sync := make(chan int) // unbuffered
-ch_async := make(chan float64, 3) // buffered
-go measure(ch_sync, ch_async)
-go calculate(ch_sync, ch_async)
+\noindent\begin{minipage}{\textwidth}
+\begin{lstlisting}[style={CustomGo},frame={},numbers={none},xleftmargin={4em}]
+syncCh := make(chan int) // unbuffered
+asyncCh := make(chan float64, 3) // buffered
 \end{lstlisting}
+\end{minipage}
 
 Alternation construct is also supported in Go, with the same approach as XC. The keyword \texttt{select} is used with a corresponding scope block \texttt{\{\}}. In the scope block, multiple cases with channel read or writes are specified. A default case can also be supplied, that is chosen if none of the other cases are available at initialization. Go does not however support guarded cases natively.
 
-\begin{lstlisting}[style={Golang},frame={},numbers={none},xleftmargin={4em}]
-t := make(chan bool)
-go timeout(t)
-ch := make(chan string)
-go readword(ch)
+\noindent\begin{minipage}{\textwidth}
+\begin{lstlisting}[style={CustomGo},frame={},numbers={none},xleftmargin={4em}]
+writeCh := make(chan bool)
+readCh := make(chan string)
 select {
-case word := <-ch:
-    fmt.Println("Received", word)
-case <-t:
-    fmt.Println("Timeout.")
+case word := <-readCh: fmt.Println("Channel read")
+case writeCh <- true:  fmt.Println("Channel write")
 }
 \end{lstlisting}
+\end{minipage}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Programming Libraries}
 \label{subsec:csp_prog_lib}
 
 With the lack of concurrent programming languages, CSP libraries have been developed for existing sequential, imperative programming languages. This includes libraries such as JCSP \citep{jcsp}, C++CSP2 \citep{c++csp2}, PyCSP \citep{pycsp}, and CSP.NET \citep{cspnet}, however only JCSP and C++CSP2 will be summarized below as of relevance to this project.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{C++CSP2}
 \label{sssec:c++csp2}
 
@@ -253,6 +275,7 @@ C++CSP2 provide CSP features such as processes, buffered/unbuffered typed one-di
 
 Processes are defined as classes, which inherit the \texttt{CSPProcess} class. The class must also implement the \texttt{run}, method, which is the procedure body of the process. 
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC++},frame={},numbers={none},xleftmargin={4em}]
 class WaitProcess : public CSProcess {
 private:
@@ -266,9 +289,11 @@ public:
     {}
 };
 \end{lstlisting}
+\end{minipage}
 
 Processes can be run in parallel or sequential order, just as in occam and XC. With the library procedures \texttt{InParallel} and \texttt{InSequence}, these process classes can then be executed in parallel and sequence, respecitvely. Execution orderings are also nestable.
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC++},frame={},numbers={none},xleftmargin={4em}]
 Run(InSequence
     ( new WaitProcess(Seconds(3)) )
@@ -279,9 +304,11 @@ Run(InParallel
     ( new WaitProcess(Seconds(3)) )
 );
 \end{lstlisting}
+\end{minipage}
 
 Channels are unbuffered, synchronous and type safe. Four types of disjointed channels are supported: any\hyp{}to\hyp{}any, any\hyp{}to\hyp{}one, one\hyp{}to\hyp{}any and one\hyp{}to\hyp{}one. C++CSP2 explicitly operates on writing and reading ends of a channel, which are handed out from a created channel. 
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC++},frame={},numbers={none},xleftmargin={4em}]
 One2OneChannel<int> c;
 Run(InParallel
@@ -289,9 +316,11 @@ Run(InParallel
     ( new NumberPrinter( c.reader() ) )
 );
 \end{lstlisting}
+\end{minipage}
 
 The writing operand is \texttt{<{}<} and reading operand is \texttt{>{}>}. 
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC++},frame={},numbers={none},xleftmargin={4em}]
 Chanin<int> in;
 Chanout<int> out;
@@ -301,11 +330,13 @@ in >> n;
 total += n;
 out << total;
 \end{lstlisting}
+\end{minipage}
 
 One added feature in C++CSP2 which is not commonly implemented amoung CSP frameworks is channel poison. Poison is used to gracefully terminate the concurrent program. 
 
 Alternation is also supported in C++CSP2. Just as occam, C++CSP2 only supports channel reads as alternatives. The alternatives can not be guarded by a conditional boolean. It supports two types of selection, one fair selection and one priority selection. One distinction from other CSP frameworks is that an alternative selection does not complete the channel operation. This has to be done manually in the branched code. 
 
+\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[style={CustomC++},frame={},numbers={none},xleftmargin={4em}]
 AltChanin<Data> dataIn;
 AltChanin<QuitSignal> quitIn;
@@ -325,7 +356,10 @@ case 1:
     break;                          
 }
 \end{lstlisting}
+\end{minipage}
 
+
+%%%%%%%%%%%%%%%%%%%%
 \subsubsection{JCSP}
 \label{sssec:jcsp}
 
@@ -338,12 +372,14 @@ Channels also support the four types of disjointness, and are unbuffered, synchr
 Alternation is as well a feature, with channel reads as alternatives. Guarded alternatives on conditional booleans are not supported. 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compilers and Run-Time Environments}
 \label{subsec:csp_comp_runtime}
 
 As mentioned in Section \ref{subsec:csp_prog_lib}, some CSP libraries have been developed as a consequence on the lack of concurrent programming languages implementing the CSP model. Taking this further, portable compilers and run-time environments have been developed on already existing, unavailable CSP languages, namely occam. Below are the most influential and used compilers and run-time environments summarized. 
 
 
+%%%%%%%%%%%%%%%%%%%%
 \subsubsection{SPoC}
 \label{sssec:spoc}
 
@@ -368,6 +404,7 @@ The C attribution and code generation is the largest component of SPoC, which ta
 The run\hyp{}time system of SPoC consists of a scheduler and routines which implement the occam concurrency and communication primitives. The essence is that processes are split into atomic sections, and the processes are statically declared along with its variable usage. The scheduler executes an atomic section at a time. Processes can be seen as stackless coroutines, as all processes and the scheduler uses the same stack. Since all variables are statically stored in the process structure, descheduling does not interfere with the process state. 
 
 
+%%%%%%%%%%%%%%%%%%%%
 \subsubsection{KRoC}
 \label{sssec:kroc}
 
@@ -378,6 +415,7 @@ KRoC works by taking the transputer assembly from a compiled occam program and e
 The kernel, which is written in assembly, provides functions used by the transputer microcode which are not supported on the targeted architecture. This concerns mainly process scheduling, timers, communications, and event handling.
 
 
+%%%%%%%%%%%%%%%%%%%%
 \subsubsection{CCSP}
 \label{sssec:ccsp}
 
